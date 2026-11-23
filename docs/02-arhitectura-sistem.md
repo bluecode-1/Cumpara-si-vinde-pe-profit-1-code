@@ -1,6 +1,6 @@
 # Pasul 2a — Arhitectura de sistem
 
-> Stare: **în așteptarea confirmării**. Decizii fixate: nume **ProfitNet**, plăți **Stripe Connect**, backend pe **tehnologie Microsoft**.
+> Stare: **confirmat**. Decizii fixate: nume **ProfitNet**, plăți **Stripe Connect**, backend pe **tehnologie Microsoft**.
 
 ## 1. Stiva aleasă
 
@@ -159,7 +159,7 @@ Detalii de siguranță:
 
 ## 6. Decizii de confirmat și puncte de verificat
 
-1. **Baza de date.** Am ales PostgreSQL administrat de Azure pentru PostGIS și pgvector. Dacă „tehnologie Microsoft” înseamnă pentru tine și motorul bazei de date, trec pe **Azure SQL**: căutarea pe rază rămâne posibilă, dar căutarea vizuală s-ar muta în Azure AI Search din prima zi. Contractul API nu se schimbă în niciun caz.
+1. **Baza de date.** Confirmat: PostgreSQL administrat de Azure (PostGIS + pgvector).
 2. **Numele „ProfitNet”.** Înlocuiește varianta inițială „Profit”, care se suprapunea cu publicația Profit.ro. Rămâne de făcut o verificare de marcă la OSIM/EUIPO înainte de a rezerva identificatorii din magazine. În cod folosesc `ro.profitnet.app`.
 3. **Escrow și reglementare.** Ținerea banilor între plată și predare e făcută de Stripe, nu de noi, dar durata maximă de reținere și încadrarea ca serviciu de plată trebuie validate cu Stripe și cu un jurist înainte de lansare.
 4. **SMS OTP.** Furnizorul rămâne în spatele `ISmsSender`; disponibilitatea și costul pentru numere românești trebuie verificate înainte de alegere.

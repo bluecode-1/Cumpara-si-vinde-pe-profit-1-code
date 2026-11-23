@@ -7,8 +7,8 @@ Aplicație C2C de vânzare, cumpărare și schimb de obiecte second-hand (Român
 | Pas | Conținut | Stare |
 |---|---|---|
 | 1 | [Analiza diferențierii](docs/01-analiza-diferentiere.md) | Confirmat |
-| 2 | [Arhitectura de sistem](docs/02-arhitectura-sistem.md), [modelul de date](docs/03-model-date.md), [specificația OpenAPI 3.1](api/openapi.yaml) | În așteptarea confirmării |
-| 3 | Structura de proiect pe platforme | — |
+| 2 | [Arhitectura de sistem](docs/02-arhitectura-sistem.md), [modelul de date](docs/03-model-date.md), [specificația OpenAPI 3.1](api/openapi.yaml) | Confirmat |
+| 3 | [Structura de proiect pe platforme](docs/04-structura-proiect.md), [direcții de design](docs/05-directii-design.md) | În așteptarea confirmării |
 | 4 | Fluxurile cheie implementate | — |
 | 5 | Plan MVP de 12 săptămâni și foaie de parcurs | — |
 | 6 | Riscuri și atenuări | — |

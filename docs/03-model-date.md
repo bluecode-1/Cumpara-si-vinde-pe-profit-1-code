@@ -1,6 +1,6 @@
 # Pasul 2b — Modelul de date
 
-> Stare: **în așteptarea confirmării**. Specificația API corespunzătoare: [`api/openapi.yaml`](../api/openapi.yaml).
+> Stare: **confirmat**. Specificația API corespunzătoare: [`api/openapi.yaml`](../api/openapi.yaml).
 
 ## 1. Ideea centrală: obiectul, nu anunțul
 
