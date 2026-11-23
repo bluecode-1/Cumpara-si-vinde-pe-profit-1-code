@@ -1,10 +1,10 @@
 openapi: 3.1.0
 info:
-  title: Profit API
+  title: ProfitNet API
   version: 0.1.0
-  summary: Shared contract for the Profit Android, Flutter and iOS clients.
+  summary: Shared contract for the ProfitNet Android, Flutter and iOS clients.
   description: |
-    Profit is a C2C marketplace for second-hand items (Romania first).
+    ProfitNet is a C2C marketplace for second-hand items (Romania first).
 
     Conventions
     - All money values are integers in minor units (`amountMinor`, bani / euro cents) plus an ISO 4217 `currency`.
@@ -23,9 +23,9 @@ info:
     name: Proprietary
     identifier: LicenseRef-Proprietary
 servers:
-  - url: https://api.profit.example/v1
+  - url: https://api.profitnet.example/v1
     description: Production (placeholder host)
-  - url: https://api.staging.profit.example/v1
+  - url: https://api.staging.profitnet.example/v1
     description: Staging (placeholder host)
 security:
   - bearerAuth: []

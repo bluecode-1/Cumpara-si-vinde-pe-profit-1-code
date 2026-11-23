@@ -1,4 +1,4 @@
-# Profit
+# ProfitNet
 
 Aplicație C2C de vânzare, cumpărare și schimb de obiecte second-hand (România), în trei variante native — Android (Java), Flutter și iOS (SwiftUI) — peste un backend comun ASP.NET Core.
 

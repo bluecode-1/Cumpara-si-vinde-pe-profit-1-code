@@ -1,6 +1,6 @@
 # Pasul 2a — Arhitectura de sistem
 
-> Stare: **în așteptarea confirmării**. Decizii fixate: nume **Profit**, plăți **Stripe Connect**, backend pe **tehnologie Microsoft**.
+> Stare: **în așteptarea confirmării**. Decizii fixate: nume **ProfitNet**, plăți **Stripe Connect**, backend pe **tehnologie Microsoft**.
 
 ## 1. Stiva aleasă
 
@@ -36,9 +36,9 @@ flowchart TB
     FD["Azure Front Door<br/>WAF · TLS · CDN"]
 
     subgraph ACA["Azure Container Apps"]
-        API["Profit.Api<br/>ASP.NET Core · REST + SignalR"]
-        WRK["Profit.Worker<br/>joburi + consumatori evenimente"]
-        ADM["Profit.Admin<br/>consolă moderare (Blazor)"]
+        API["ProfitNet.Api<br/>ASP.NET Core · REST + SignalR"]
+        WRK["ProfitNet.Worker<br/>joburi + consumatori evenimente"]
+        ADM["ProfitNet.Admin<br/>consolă moderare (Blazor)"]
     end
 
     subgraph Data["Date"]
@@ -98,13 +98,13 @@ Structura soluției:
 ```
 backend/
 ├── src/
-│   ├── Profit.Api/            # host: REST, SignalR, autentificare, OpenAPI
-│   ├── Profit.Worker/         # host: joburi programate + consumatori Service Bus
-│   ├── Profit.Admin/          # consolă de moderare
-│   ├── Profit.SharedKernel/   # Money, Result, evenimente, outbox
+│   ├── ProfitNet.Api/            # host: REST, SignalR, autentificare, OpenAPI
+│   ├── ProfitNet.Worker/         # host: joburi programate + consumatori Service Bus
+│   ├── ProfitNet.Admin/          # consolă de moderare
+│   ├── ProfitNet.SharedKernel/   # Money, Result, evenimente, outbox
 │   └── Modules/
-│       ├── Profit.Identity/   # fiecare: Domain / Application / Infrastructure / Endpoints
-│       ├── Profit.Catalog/
+│       ├── ProfitNet.Identity/   # fiecare: Domain / Application / Infrastructure / Endpoints
+│       ├── ProfitNet.Catalog/
 │       └── …
 └── tests/                     # xUnit: unitare, integrare (Testcontainers), contract față de openapi.yaml
 ```
@@ -115,7 +115,7 @@ backend/
 sequenceDiagram
     autonumber
     participant B as Cumpărător
-    participant API as Profit.Api
+    participant API as ProfitNet.Api
     participant S as Stripe
     participant V as Vânzător
 
@@ -144,7 +144,7 @@ Detalii de siguranță:
 - **Tokenul QR** este `transactionId + nonce + expirare`, semnat HMAC pe server. Nonce-ul se consumă din Redis la prima folosire, deci o captură de ecran a QR-ului nu poate fi refolosită.
 - **Cine scanează:** cumpărătorul arată, vânzătorul scanează. Cumpărătorul deține dovada plății și o prezintă doar după ce a văzut obiectul; vânzătorul nu poate elibera banii singur.
 - **Cod de rezervă** din 6 cifre pentru cameră defectă sau lumină slabă, cu maximum 5 încercări.
-- **Livrare prin curier:** un job din `Profit.Worker` eliberează escrow-ul la 48 h după livrare dacă nu există dispută; o dispută îngheață fondurile.
+- **Livrare prin curier:** un job din `ProfitNet.Worker` eliberează escrow-ul la 48 h după livrare dacă nu există dispută; o dispută îngheață fondurile.
 - **Idempotență:** `payment`, `handover` și webhook-urile Stripe sunt idempotente, deci o reîncercare pe rețea slabă nu dublează nicio operație.
 
 ## 5. Securitate și anti-fraudă la nivel de arhitectură
@@ -160,7 +160,7 @@ Detalii de siguranță:
 ## 6. Decizii de confirmat și puncte de verificat
 
 1. **Baza de date.** Am ales PostgreSQL administrat de Azure pentru PostGIS și pgvector. Dacă „tehnologie Microsoft” înseamnă pentru tine și motorul bazei de date, trec pe **Azure SQL**: căutarea pe rază rămâne posibilă, dar căutarea vizuală s-ar muta în Azure AI Search din prima zi. Contractul API nu se schimbă în niciun caz.
-2. **Numele „Profit”.** Există deja publicația financiară Profit.ro. Recomand o verificare de marcă la OSIM/EUIPO pentru clasele relevante înainte de a rezerva identificatorii din magazine. În cod folosesc provizoriu `ro.profit.app`.
+2. **Numele „ProfitNet”.** Înlocuiește varianta inițială „Profit”, care se suprapunea cu publicația Profit.ro. Rămâne de făcut o verificare de marcă la OSIM/EUIPO înainte de a rezerva identificatorii din magazine. În cod folosesc `ro.profitnet.app`.
 3. **Escrow și reglementare.** Ținerea banilor între plată și predare e făcută de Stripe, nu de noi, dar durata maximă de reținere și încadrarea ca serviciu de plată trebuie validate cu Stripe și cu un jurist înainte de lansare.
 4. **SMS OTP.** Furnizorul rămâne în spatele `ISmsSender`; disponibilitatea și costul pentru numere românești trebuie verificate înainte de alegere.
-5. **Gazdele din `openapi.yaml`** (`api.profit.example`) sunt substituenți până la alegerea domeniului.
+5. **Gazdele din `openapi.yaml`** (`api.profitnet.example`) sunt substituenți până la alegerea domeniului.

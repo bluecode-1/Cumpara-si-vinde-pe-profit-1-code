@@ -8,7 +8,7 @@
 
 OLX, Vinted și Facebook Marketplace sunt construite în jurul **anunțului**: un text cu poze, pus într-o listă, pe care cumpărătorul îl găsește derulând. Tot riscul (stare reală, preț corect, întâlnire, plată) rămâne la utilizatori.
 
-`Profit` este construită în jurul **obiectului și al predării lui**:
+`ProfitNet` este construită în jurul **obiectului și al predării lui**:
 
 | Axa | Concurența | Noi |
 |---|---|---|
@@ -61,6 +61,6 @@ Legendă: ✗ = nu există · ◐ = există parțial / sub altă formă · ✓ =
 
 ## 5. Decizii luate
 
-1. **Numele aplicației:** Profit.
+1. **Numele aplicației:** ProfitNet.
 2. **Procesatorul de plăți:** Stripe Connect, în spatele unei interfețe de furnizor, astfel încât Netopia să poată fi adăugat ulterior fără schimbări în aplicațiile mobile.
 3. **Backend:** tehnologie Microsoft (ASP.NET Core pe .NET, găzduit în Azure) — detalii în [Pasul 2](02-arhitectura-sistem.md).
