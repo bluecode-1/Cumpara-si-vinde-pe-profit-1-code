@@ -1,6 +1,6 @@
 # Pasul 1 — Analiza diferențierii
 
-> Stare: **în așteptarea confirmării**. Numele aplicației este încă `[NUME_APLICAȚIE]`.
+> Stare: **confirmat**.
 >
 > Notă de metodă: coloanele despre concurență descriu comportamentul lor pe piața din România așa cum îl cunoaștem la data redactării (noiembrie 2026). Trebuie reverificate înainte de orice comunicare publică sau material de marketing comparativ.
 
@@ -8,7 +8,7 @@
 
 OLX, Vinted și Facebook Marketplace sunt construite în jurul **anunțului**: un text cu poze, pus într-o listă, pe care cumpărătorul îl găsește derulând. Tot riscul (stare reală, preț corect, întâlnire, plată) rămâne la utilizatori.
 
-`[NUME_APLICAȚIE]` este construită în jurul **obiectului și al predării lui**:
+`Profit` este construită în jurul **obiectului și al predării lui**:
 
 | Axa | Concurența | Noi |
 |---|---|---|
@@ -59,8 +59,8 @@ Legendă: ✗ = nu există · ◐ = există parțial / sub altă formă · ✓ =
 | Pașaport | Gol la început, valoare mică | Câmpuri opționale, completare progresivă; valoarea reală apare de la a doua vânzare a aceluiași obiect |
 | Preț din vânzări finalizate | Lipsă de date la lansare | Interval afișat doar peste un prag de eșantion; sub prag, spunem deschis „date insuficiente” |
 
-## 5. Decizii deschise înainte de Pasul 2
+## 5. Decizii luate
 
-1. **Numele aplicației** — înlocuiește `[NUME_APLICAȚIE]` în pachete, bundle ID-uri și texte.
-2. **Procesatorul de plăți** — recomandare: Stripe Connect, în spatele unei interfețe `PaymentProvider`, astfel încât Netopia să poată fi adăugat ulterior fără schimbări în aplicațiile mobile.
-3. **Backend** — recomandare: NestJS (TypeScript) + PostgreSQL/PostGIS + Redis + Meilisearch + S3; justificarea completă vine în Pasul 2.
+1. **Numele aplicației:** Profit.
+2. **Procesatorul de plăți:** Stripe Connect, în spatele unei interfețe de furnizor, astfel încât Netopia să poată fi adăugat ulterior fără schimbări în aplicațiile mobile.
+3. **Backend:** tehnologie Microsoft (ASP.NET Core pe .NET, găzduit în Azure) — detalii în [Pasul 2](02-arhitectura-sistem.md).

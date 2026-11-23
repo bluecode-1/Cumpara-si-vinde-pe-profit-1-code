@@ -1,0 +1,2398 @@
+openapi: 3.1.0
+info:
+  title: Profit API
+  version: 0.1.0
+  summary: Shared contract for the Profit Android, Flutter and iOS clients.
+  description: |
+    Profit is a C2C marketplace for second-hand items (Romania first).
+
+    Conventions
+    - All money values are integers in minor units (`amountMinor`, bani / euro cents) plus an ISO 4217 `currency`.
+    - All ids are UUID v7 strings. All timestamps are RFC 3339 in UTC.
+    - Lists use cursor pagination: pass `cursor` from the previous `nextCursor`.
+    - Errors use RFC 9457 `application/problem+json`; `code` is a stable machine-readable string.
+    - Mutating requests accept an `Idempotency-Key` header; retries with the same key return the original result.
+    - `Accept-Language: ro` (default) or `en` selects the language of server-generated text.
+
+    Real-time
+    - Chat, read receipts, offer updates and live location use a SignalR hub at `/hubs/chat`
+      (WebSocket transport, JSON protocol, `access_token` query parameter). REST endpoints below
+      are the source of truth; the hub only pushes events (`MessageCreated`, `MessageRead`,
+      `OfferUpdated`, `MeetingUpdated`, `TransactionUpdated`, `LocationUpdated`).
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+servers:
+  - url: https://api.profit.example/v1
+    description: Production (placeholder host)
+  - url: https://api.staging.profit.example/v1
+    description: Staging (placeholder host)
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+  - name: Me
+  - name: Users
+  - name: Catalog
+  - name: Media
+  - name: Listings
+  - name: Passport
+  - name: Pricing
+  - name: Wanted
+  - name: Closet
+  - name: Chat
+  - name: Offers
+  - name: Meetings
+  - name: Transactions
+  - name: Reviews
+  - name: Reports
+  - name: Vehicles
+  - name: Compliance
+
+paths:
+  # ───────────────────────────── Auth ─────────────────────────────
+  /auth/otp/request:
+    post:
+      tags: [Auth]
+      operationId: requestOtp
+      summary: Send a one-time code by SMS (verification tier 1).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone: { type: string, description: E.164, examples: ['+40712345678'] }
+      responses:
+        '202':
+          description: Code sent.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [challengeId, retryAfterSeconds]
+                properties:
+                  challengeId: { $ref: '#/components/schemas/Id' }
+                  retryAfterSeconds: { type: integer }
+        '429': { $ref: '#/components/responses/Problem' }
+        default: { $ref: '#/components/responses/Problem' }
+  /auth/otp/verify:
+    post:
+      tags: [Auth]
+      operationId: verifyOtp
+      summary: Exchange the SMS code for tokens. Creates the account on first use.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [challengeId, code]
+              properties:
+                challengeId: { $ref: '#/components/schemas/Id' }
+                code: { type: string, pattern: '^[0-9]{6}$' }
+      responses:
+        '200':
+          description: Authenticated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthSession' }
+        default: { $ref: '#/components/responses/Problem' }
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      operationId: refreshToken
+      summary: Rotate the refresh token. Reuse of an old token revokes the whole family.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        '200':
+          description: New token pair.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
+        default: { $ref: '#/components/responses/Problem' }
+  /auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logout
+      summary: Revoke the current refresh token family and unregister the device.
+      responses:
+        '204': { description: Logged out. }
+        default: { $ref: '#/components/responses/Problem' }
+  /auth/email/request:
+    post:
+      tags: [Auth]
+      operationId: requestEmailVerification
+      summary: Send an email verification link (verification tier 2).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '202': { description: Email sent. }
+        default: { $ref: '#/components/responses/Problem' }
+  /auth/email/confirm:
+    post:
+      tags: [Auth]
+      operationId: confirmEmail
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string }
+      responses:
+        '204': { description: Email verified. }
+        default: { $ref: '#/components/responses/Problem' }
+  /kyc/sessions:
+    post:
+      tags: [Auth]
+      operationId: createKycSession
+      summary: Start identity-document verification with the KYC provider (tier 3).
+      responses:
+        '201':
+          description: Session created; open `providerUrl` in the provider SDK or a secure web view.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sessionId, providerUrl]
+                properties:
+                  sessionId: { $ref: '#/components/schemas/Id' }
+                  providerUrl: { type: string, format: uri }
+        default: { $ref: '#/components/responses/Problem' }
+
+  # ───────────────────────────── Me ─────────────────────────────
+  /me:
+    get:
+      tags: [Me]
+      operationId: getMe
+      responses:
+        '200':
+          description: The authenticated user.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Me' }
+        default: { $ref: '#/components/responses/Problem' }
+    patch:
+      tags: [Me]
+      operationId: updateMe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MeUpdate' }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Me' }
+        default: { $ref: '#/components/responses/Problem' }
+    delete:
+      tags: [Me, Compliance]
+      operationId: deleteMe
+      summary: GDPR erasure request. Blocked while escrow funds or disputes are open.
+      responses:
+        '202': { description: Deletion scheduled (30-day grace period). }
+        '409': { $ref: '#/components/responses/Problem' }
+        default: { $ref: '#/components/responses/Problem' }
+  /me/consents:
+    get:
+      tags: [Me, Compliance]
+      operationId: listConsents
+      responses:
+        '200':
+          description: Current consent state.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Consent' }
+        default: { $ref: '#/components/responses/Problem' }
+    put:
+      tags: [Me, Compliance]
+      operationId: setConsents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                required: [purpose, granted, policyVersion]
+                properties:
+                  purpose: { $ref: '#/components/schemas/ConsentPurpose' }
+                  granted: { type: boolean }
+                  policyVersion: { type: string }
+      responses:
+        '204': { description: Saved. }
+        default: { $ref: '#/components/responses/Problem' }
+  /me/data-export:
+    post:
+      tags: [Me, Compliance]
+      operationId: requestDataExport
+      summary: GDPR data portability. A download link is emailed when the archive is ready.
+      responses:
+        '202': { description: Export queued. }
+        default: { $ref: '#/components/responses/Problem' }
+  /me/devices:
+    put:
+      tags: [Me]
+      operationId: registerDevice
+      summary: Register or refresh the push token for this installation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [installationId, platform, pushToken]
+              properties:
+                installationId: { type: string }
+                platform: { type: string, enum: [ANDROID, IOS] }
+                pushToken: { type: string }
+                locale: { type: string, examples: [ro-RO] }
+      responses:
+        '204': { description: Registered. }
+        default: { $ref: '#/components/responses/Problem' }
+  /me/notification-preferences:
+    get:
+      tags: [Me]
+      operationId: getNotificationPreferences
+      responses:
+        '200':
+          description: Per-topic push switches.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/NotificationPreferences' }
+        default: { $ref: '#/components/responses/Problem' }
+    put:
+      tags: [Me]
+      operationId: setNotificationPreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NotificationPreferences' }
+      responses:
+        '204': { description: Saved. }
+        default: { $ref: '#/components/responses/Problem' }
+  /me/saved-listings:
+    get:
+      tags: [Me, Listings]
+      operationId: listSavedListings
+      summary: Saved listings; clients mirror this list for offline browsing.
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: updatedSince
+          in: query
+          schema: { type: string, format: date-time }
+          description: Delta sync for the offline cache.
+      responses:
+        '200':
+          description: Page of listings.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListingPage' }
+        default: { $ref: '#/components/responses/Problem' }
+  /me/matches:
+    get:
+      tags: [Me, Wanted]
+      operationId: listMatches
+      summary: Matches between my listings / closet items and other users' wanted requests, and vice versa.
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Page of matches.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Match' }
+                  nextCursor: { type: [string, 'null'] }
+        default: { $ref: '#/components/responses/Problem' }
+  /me/impact:
+    get:
+      tags: [Me]
+      operationId: getImpact
+      summary: Personal reuse impact estimate.
+      responses:
+        '200':
+          description: Totals with the methodology version used.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [co2AvoidedGrams, wasteAvoidedGrams, itemsReused, methodologyVersion]
+                properties:
+                  co2AvoidedGrams: { type: integer }
+                  wasteAvoidedGrams: { type: integer }
+                  itemsReused: { type: integer }
+                  methodologyVersion: { type: string }
+        default: { $ref: '#/components/responses/Problem' }
+  /me/payout-account:
+    get:
+      tags: [Me, Transactions]
+      operationId: getPayoutAccount
+      responses:
+        '200':
+          description: Payout account status at the payment provider.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PayoutAccount' }
+        default: { $ref: '#/components/responses/Problem' }
+    post:
+      tags: [Me, Transactions]
+      operationId: createPayoutOnboardingLink
+      summary: Create a provider-hosted onboarding link so the seller can receive payouts.
+      responses:
+        '201':
+          description: Open `url` in a secure browser tab.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url, expiresAt]
+                properties:
+                  url: { type: string, format: uri }
+                  expiresAt: { type: string, format: date-time }
+        default: { $ref: '#/components/responses/Problem' }
+  /me/tax-profile:
+    get:
+      tags: [Me, Compliance]
+      operationId: getTaxProfile
+      summary: DAC7 status. `required` becomes true only when the user approaches the reporting thresholds.
+      responses:
+        '200':
+          description: DAC7 status and data, if collected.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TaxProfile' }
+        default: { $ref: '#/components/responses/Problem' }
+    put:
+      tags: [Me, Compliance]
+      operationId: setTaxProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TaxProfileInput' }
+      responses:
+        '204': { description: Saved. }
+        default: { $ref: '#/components/responses/Problem' }
+
+  # ───────────────────────────── Users ─────────────────────────────
+  /users/{userId}:
+    get:
+      tags: [Users]
+      operationId: getUser
+      parameters: [{ $ref: '#/components/parameters/UserId' }]
+      responses:
+        '200':
+          description: Public profile with attribute badges (no numeric average).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PublicUser' }
+        default: { $ref: '#/components/responses/Problem' }
+
+  # ───────────────────────────── Catalog ─────────────────────────────
+  /categories:
+    get:
+      tags: [Catalog]
+      operationId: listCategories
+      security: []
+      responses:
+        '200':
+          description: Full category tree (cacheable, ETag).
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Category' }
+        default: { $ref: '#/components/responses/Problem' }
+  /categories/{categoryId}/capture-guide:
+    get:
+      tags: [Catalog]
+      operationId: getCaptureGuide
+      summary: Guided-photography shots and the 5-level condition criteria for a category.
+      security: []
+      parameters: [{ $ref: '#/components/parameters/CategoryId' }]
+      responses:
+        '200':
+          description: Capture guide (cacheable, ETag).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CaptureGuide' }
+        default: { $ref: '#/components/responses/Problem' }
+  /home:
+    get:
+      tags: [Catalog]
+      operationId: getHome
+      summary: Finite home screen - nearby today, curated collections, matches. Not a feed.
+      parameters:
+        - $ref: '#/components/parameters/Lat'
+        - $ref: '#/components/parameters/Lng'
+      responses:
+        '200':
+          description: Home sections.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Home' }
+        default: { $ref: '#/components/responses/Problem' }
+  /safe-spots:
+    get:
+      tags: [Meetings]
+      operationId: listSafeSpots
+      parameters:
+        - $ref: '#/components/parameters/LatRequired'
+        - $ref: '#/components/parameters/LngRequired'
+        - $ref: '#/components/parameters/RadiusKm'
+      responses:
+        '200':
+          description: Recommended public meeting places.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/SafeSpot' }
+        default: { $ref: '#/components/responses/Problem' }
+
+  # ───────────────────────────── Media ─────────────────────────────
+  /media/uploads:
+    post:
+      tags: [Media]
+      operationId: createUpload
+      summary: Open a resumable upload session.
+      description: |
+        The client compresses the image (WebP on Android/Flutter, HEIC on iOS), strips EXIF/GPS,
+        then uploads fixed-size blocks to `blockUrlTemplate` (replace `{blockId}`) with HTTP PUT.
+        Blocks may be retried or resumed in any order. The server strips metadata again and
+        transcodes after `completeUpload`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contentType, sizeBytes, purpose]
+              properties:
+                contentType: { type: string, enum: [image/webp, image/heic, image/jpeg, application/pdf] }
+                sizeBytes: { type: integer, maximum: 15728640 }
+                purpose: { type: string, enum: [LISTING_PHOTO, RECEIPT, VEHICLE_DOCUMENT, AVATAR, CHAT_IMAGE, VISUAL_SEARCH] }
+                shotKey: { type: string, description: Capture-guide shot this photo satisfies. }
+      responses:
+        '201':
+          description: Upload session.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UploadSession' }
+        default: { $ref: '#/components/responses/Problem' }
+  /media/uploads/{uploadId}:
+    get:
+      tags: [Media]
+      operationId: getUpload
+      summary: Which blocks have been received (used to resume after an interruption).
+      parameters: [{ $ref: '#/components/parameters/UploadId' }]
+      responses:
+        '200':
+          description: Upload session state.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UploadSession' }
+        default: { $ref: '#/components/responses/Problem' }
+  /media/uploads/{uploadId}/complete:
+    post:
+      tags: [Media]
+      operationId: completeUpload
+      parameters: [{ $ref: '#/components/parameters/UploadId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [blockIds]
+              properties:
+                blockIds:
+                  type: array
+                  items: { type: string }
+                redactions:
+                  type: array
+                  description: Rectangles (relative 0..1) to black out, e.g. personal data on a receipt.
+                  items: { $ref: '#/components/schemas/Rect' }
+      responses:
+        '200':
+          description: Media committed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Media' }
+        default: { $ref: '#/components/responses/Problem' }
+
+  # ───────────────────────────── Listings ─────────────────────────────
+  /listings:
+    get:
+      tags: [Listings]
+      operationId: searchListings
+      summary: Search with filters and optional radius. Results are capped (no infinite feed).
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+        - { name: categoryId, in: query, schema: { $ref: '#/components/schemas/Id' } }
+        - { name: kind, in: query, schema: { $ref: '#/components/schemas/ListingKind' } }
+        - { name: minCondition, in: query, schema: { $ref: '#/components/schemas/ConditionGrade' } }
+        - { name: priceMinMinor, in: query, schema: { type: integer, minimum: 0 } }
+        - { name: priceMaxMinor, in: query, schema: { type: integer, minimum: 0 } }
+        - { name: acceptsBarter, in: query, schema: { type: boolean } }
+        - { name: hasPassport, in: query, schema: { type: boolean } }
+        - $ref: '#/components/parameters/Lat'
+        - $ref: '#/components/parameters/Lng'
+        - $ref: '#/components/parameters/RadiusKm'
+        - name: bbox
+          in: query
+          description: Map viewport as `minLng,minLat,maxLng,maxLat`. Alternative to lat/lng/radius.
+          schema: { type: string }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [RELEVANCE, DISTANCE, NEWEST, PRICE_ASC, PRICE_DESC], default: RELEVANCE }
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Page of listing summaries.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListingPage' }
+        default: { $ref: '#/components/responses/Problem' }
+    post:
+      tags: [Listings]
+      operationId: createListing
+      summary: Create a draft listing. Drafts created offline are synced with their client-generated id.
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ListingInput' }
+      responses:
+        '201':
+          description: Draft created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Listing' }
+        default: { $ref: '#/components/responses/Problem' }
+  /listings/suggestions:
+    post:
+      tags: [Listings]
+      operationId: suggestListingFields
+      summary: AI suggestions (title, category, description, attributes) from uploaded photos. Always editable.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mediaIds]
+              properties:
+                mediaIds:
+                  type: array
+                  minItems: 1
+                  maxItems: 6
+                  items: { $ref: '#/components/schemas/Id' }
+                categoryId: { $ref: '#/components/schemas/Id' }
+      responses:
+        '200':
+          description: Suggestions.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListingSuggestion' }
+        default: { $ref: '#/components/responses/Problem' }
+  /listings/visual-search:
+    post:
+      tags: [Listings]
+      operationId: visualSearch
+      summary: Find visually similar listings from an uploaded photo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mediaId]
+              properties:
+                mediaId: { $ref: '#/components/schemas/Id' }
+                lat: { type: number }
+                lng: { type: number }
+                radiusKm: { type: number }
+      responses:
+        '200':
+          description: Similar listings, best match first.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListingPage' }
+        default: { $ref: '#/components/responses/Problem' }
+  /listings/{listingId}:
+    get:
+      tags: [Listings]
+      operationId: getListing
+      parameters: [{ $ref: '#/components/parameters/ListingId' }]
+      responses:
+        '200':
+          description: Listing with passport summary and seller badges.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Listing' }
+        default: { $ref: '#/components/responses/Problem' }
+    patch:
+      tags: [Listings]
+      operationId: updateListing
+      parameters: [{ $ref: '#/components/parameters/ListingId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ListingInput' }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Listing' }
+        default: { $ref: '#/components/responses/Problem' }
+    delete:
+      tags: [Listings]
+      operationId: withdrawListing
+      summary: Withdraw. The item and its passport return to the owner's closet.
+      parameters: [{ $ref: '#/components/parameters/ListingId' }]
+      responses:
+        '204': { description: Withdrawn. }
+        default: { $ref: '#/components/responses/Problem' }
+  /listings/{listingId}/publish:
+    post:
+      tags: [Listings]
+      operationId: publishListing
+      summary: Validate required shots and condition criteria, run automated moderation, publish.
+      parameters: [{ $ref: '#/components/parameters/ListingId' }]
+      responses:
+        '200':
+          description: Published or sent to manual review (`status`).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Listing' }
+        '422': { $ref: '#/components/responses/Problem' }
+        default: { $ref: '#/components/responses/Problem' }
+  /listings/{listingId}/saved:
+    put:
+      tags: [Listings]
+      operationId: saveListing
+      parameters: [{ $ref: '#/components/parameters/ListingId' }]
+      responses:
+        '204': { description: Saved. }
+        default: { $ref: '#/components/responses/Problem' }
+    delete:
+      tags: [Listings]
+      operationId: unsaveListing
+      parameters: [{ $ref: '#/components/parameters/ListingId' }]
+      responses:
+        '204': { description: Removed. }
+        default: { $ref: '#/components/responses/Problem' }
+  /listings/{listingId}/bundle-quote:
+    post:
+      tags: [Listings]
+      operationId: quoteBundle
+      summary: '"Golesc casa" - total price for the items the buyer ticked, with the volume discount applied.'
+      parameters: [{ $ref: '#/components/parameters/ListingId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [bundleItemIds]
+              properties:
+                bundleItemIds:
+                  type: array
+                  minItems: 1
+                  items: { $ref: '#/components/schemas/Id' }
+      responses:
+        '200':
+          description: Quote.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [subtotal, discount, total, quoteId, expiresAt]
+                properties:
+                  quoteId: { $ref: '#/components/schemas/Id' }
+                  subtotal: { $ref: '#/components/schemas/Money' }
+                  discount: { $ref: '#/components/schemas/Money' }
+                  total: { $ref: '#/components/schemas/Money' }
+                  expiresAt: { type: string, format: date-time }
+        default: { $ref: '#/components/responses/Problem' }
+
+  # ───────────────────────────── Passport ─────────────────────────────
+  /passports/{passportId}:
+    get:
+      tags: [Passport]
+      operationId: getPassport
+      summary: Item passport. Previous owners are shown as a count, never as identities.
+      parameters: [{ $ref: '#/components/parameters/PassportId' }]
+      responses:
+        '200':
+          description: Passport with event history.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ItemPassport' }
+        default: { $ref: '#/components/responses/Problem' }
+    patch:
+      tags: [Passport]
+      operationId: updatePassport
+      summary: Current owner only.
+      parameters: [{ $ref: '#/components/parameters/PassportId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ItemPassportInput' }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ItemPassport' }
+        default: { $ref: '#/components/responses/Problem' }
+  /passports/{passportId}/events:
+    post:
+      tags: [Passport]
+      operationId: addPassportEvent
+      summary: Append a repair or note. Ownership transfers are written by the system only.
+      parameters: [{ $ref: '#/components/parameters/PassportId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, occurredOn]
+              properties:
+                type: { type: string, enum: [REPAIR, SERVICE, NOTE] }
+                occurredOn: { type: string, format: date }
+                description: { type: string, maxLength: 500 }
+                mediaIds:
+                  type: array
+                  items: { $ref: '#/components/schemas/Id' }
+      responses:
+        '201':
+          description: Event appended.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PassportEvent' }
+        default: { $ref: '#/components/responses/Problem' }
+
+  # ───────────────────────────── Pricing ─────────────────────────────
+  /pricing/estimate:
+    post:
+      tags: [Pricing]
+      operationId: estimatePrice
+      summary: Fair price range from completed in-app sales (never from active listings).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [categoryId, condition]
+              properties:
+                categoryId: { $ref: '#/components/schemas/Id' }
+                condition: { $ref: '#/components/schemas/ConditionGrade' }
+                attributes: { $ref: '#/components/schemas/Attributes' }
+                purchaseYear: { type: integer }
+      responses:
+        '200':
+          description: Estimate. `status` is INSUFFICIENT_DATA when the sample is below the threshold.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PriceEstimate' }
+        default: { $ref: '#/components/responses/Problem' }
+
+  # ───────────────────────────── Wanted ─────────────────────────────
+  /wanted:
+    get:
+      tags: [Wanted]
+      operationId: searchWanted
+      parameters:
+        - { name: categoryId, in: query, schema: { $ref: '#/components/schemas/Id' } }
+        - { name: mine, in: query, schema: { type: boolean } }
+        - $ref: '#/components/parameters/Lat'
+        - $ref: '#/components/parameters/Lng'
+        - $ref: '#/components/parameters/RadiusKm'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Page of wanted requests.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Wanted' }
+                  nextCursor: { type: [string, 'null'] }
+        default: { $ref: '#/components/responses/Problem' }
+    post:
+      tags: [Wanted]
+      operationId: createWanted
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WantedInput' }
+      responses:
+        '201':
+          description: Created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Wanted' }
+        default: { $ref: '#/components/responses/Problem' }
+  /wanted/{wantedId}:
+    get:
+      tags: [Wanted]
+      operationId: getWanted
+      parameters: [{ $ref: '#/components/parameters/WantedId' }]
+      responses:
+        '200':
+          description: Wanted request.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Wanted' }
+        default: { $ref: '#/components/responses/Problem' }
+    patch:
+      tags: [Wanted]
+      operationId: updateWanted
+      parameters: [{ $ref: '#/components/parameters/WantedId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WantedInput' }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Wanted' }
+        default: { $ref: '#/components/responses/Problem' }
+    delete:
+      tags: [Wanted]
+      operationId: closeWanted
+      parameters: [{ $ref: '#/components/parameters/WantedId' }]
+      responses:
+        '204': { description: Closed. }
+        default: { $ref: '#/components/responses/Problem' }
+
+  # ───────────────────────────── Closet ─────────────────────────────
+  /closet/items:
+    get:
+      tags: [Closet]
+      operationId: listClosetItems
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: My inventory (private).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/ClosetItem' }
+                  nextCursor: { type: [string, 'null'] }
+        default: { $ref: '#/components/responses/Problem' }
+    post:
+      tags: [Closet]
+      operationId: createClosetItem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ClosetItemInput' }
+      responses:
+        '201':
+          description: Created, together with its passport.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClosetItem' }
+        default: { $ref: '#/components/responses/Problem' }
+  /closet/items/{closetItemId}:
+    patch:
+      tags: [Closet]
+      operationId: updateClosetItem
+      parameters: [{ $ref: '#/components/parameters/ClosetItemId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ClosetItemInput' }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClosetItem' }
+        default: { $ref: '#/components/responses/Problem' }
+    delete:
+      tags: [Closet]
+      operationId: deleteClosetItem
+      parameters: [{ $ref: '#/components/parameters/ClosetItemId' }]
+      responses:
+        '204': { description: Deleted. }
+        default: { $ref: '#/components/responses/Problem' }
+  /closet/items/{closetItemId}/list:
+    post:
+      tags: [Closet, Listings]
+      operationId: listClosetItemForSale
+      summary: Turn a closet item into a draft listing that reuses its photos and passport.
+      parameters: [{ $ref: '#/components/parameters/ClosetItemId' }]
+      responses:
+        '201':
+          description: Draft listing.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Listing' }
+        default: { $ref: '#/components/responses/Problem' }
+
+  # ───────────────────────────── Chat ─────────────────────────────
+  /conversations:
+    get:
+      tags: [Chat]
+      operationId: listConversations
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Conversations, most recent first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Conversation' }
+                  nextCursor: { type: [string, 'null'] }
+        default: { $ref: '#/components/responses/Problem' }
+    post:
+      tags: [Chat]
+      operationId: openConversation
+      summary: Open (or return the existing) conversation about a listing or a wanted request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                listingId: { $ref: '#/components/schemas/Id' }
+                wantedId: { $ref: '#/components/schemas/Id' }
+      responses:
+        '200':
+          description: Conversation.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Conversation' }
+        default: { $ref: '#/components/responses/Problem' }
+  /conversations/{conversationId}/messages:
+    get:
+      tags: [Chat]
+      operationId: listMessages
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Messages, newest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Message' }
+                  nextCursor: { type: [string, 'null'] }
+        default: { $ref: '#/components/responses/Problem' }
+    post:
+      tags: [Chat]
+      operationId: sendMessage
+      summary: Send text or an image.
+      description: |
+        Until the conversation has a confirmed transaction, links, IBANs and phone numbers are
+        masked server-side (`maskedSpans`) and scam patterns attach a `safetyNotice` that the
+        recipient sees next to the message.
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [clientMessageId]
+              properties:
+                clientMessageId: { type: string, description: Client-generated id for de-duplication. }
+                text: { type: string, maxLength: 2000 }
+                mediaId: { $ref: '#/components/schemas/Id' }
+      responses:
+        '201':
+          description: Message stored and fanned out.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Message' }
+        default: { $ref: '#/components/responses/Problem' }
+  /conversations/{conversationId}/read:
+    post:
+      tags: [Chat]
+      operationId: markRead
+      parameters: [{ $ref: '#/components/parameters/ConversationId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [upToMessageId]
+              properties:
+                upToMessageId: { $ref: '#/components/schemas/Id' }
+      responses:
+        '204': { description: Read receipt recorded. }
+        default: { $ref: '#/components/responses/Problem' }
+
+  # ───────────────────────────── Offers ─────────────────────────────
+  /conversations/{conversationId}/offers:
+    post:
+      tags: [Offers]
+      operationId: createOffer
+      summary: Structured offer - money, barter, or mixed. Appears in the chat as an OFFER message.
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OfferInput' }
+      responses:
+        '201':
+          description: Offer created.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Offer' }
+        default: { $ref: '#/components/responses/Problem' }
+  /offers/{offerId}:
+    get:
+      tags: [Offers]
+      operationId: getOffer
+      parameters: [{ $ref: '#/components/parameters/OfferId' }]
+      responses:
+        '200':
+          description: Offer.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Offer' }
+        default: { $ref: '#/components/responses/Problem' }
+  /offers/{offerId}/accept:
+    post:
+      tags: [Offers]
+      operationId: acceptOffer
+      summary: Accept. Creates the transaction and reserves the listing.
+      parameters: [{ $ref: '#/components/parameters/OfferId' }]
+      responses:
+        '200':
+          description: The created transaction.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Transaction' }
+        '409': { $ref: '#/components/responses/Problem' }
+        default: { $ref: '#/components/responses/Problem' }
+  /offers/{offerId}/decline:
+    post:
+      tags: [Offers]
+      operationId: declineOffer
+      parameters: [{ $ref: '#/components/parameters/OfferId' }]
+      responses:
+        '200':
+          description: Declined.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Offer' }
+        default: { $ref: '#/components/responses/Problem' }
+  /offers/{offerId}/counter:
+    post:
+      tags: [Offers]
+      operationId: counterOffer
+      summary: Counter-offer. The original becomes COUNTERED and links to the new one.
+      parameters: [{ $ref: '#/components/parameters/OfferId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OfferInput' }
+      responses:
+        '201':
+          description: New offer.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Offer' }
+        default: { $ref: '#/components/responses/Problem' }
+
+  # ───────────────────────────── Meetings ─────────────────────────────
+  /conversations/{conversationId}/meetings:
+    post:
+      tags: [Meetings]
+      operationId: proposeMeeting
+      parameters: [{ $ref: '#/components/parameters/ConversationId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [startsAt]
+              properties:
+                startsAt: { type: string, format: date-time }
+                safeSpotId: { $ref: '#/components/schemas/Id' }
+                customPlace: { $ref: '#/components/schemas/Place' }
+      responses:
+        '201':
+          description: Meeting proposed (appears in the chat as a MEETING message).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Meeting' }
+        default: { $ref: '#/components/responses/Problem' }
+  /meetings/{meetingId}:
+    patch:
+      tags: [Meetings]
+      operationId: respondToMeeting
+      parameters: [{ $ref: '#/components/parameters/MeetingId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [CONFIRMED, DECLINED, CANCELLED] }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Meeting' }
+        default: { $ref: '#/components/responses/Problem' }
+  /meetings/{meetingId}/location-share:
+    post:
+      tags: [Meetings]
+      operationId: startLocationShare
+      summary: Create a time-limited link that a trusted person can open without an account.
+      parameters: [{ $ref: '#/components/parameters/MeetingId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                durationMinutes: { type: integer, minimum: 15, maximum: 240, default: 60 }
+      responses:
+        '201':
+          description: Share link. Positions are pushed over the hub and never stored after expiry.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [shareUrl, expiresAt]
+                properties:
+                  shareUrl: { type: string, format: uri }
+                  expiresAt: { type: string, format: date-time }
+        default: { $ref: '#/components/responses/Problem' }
+    delete:
+      tags: [Meetings]
+      operationId: stopLocationShare
+      parameters: [{ $ref: '#/components/parameters/MeetingId' }]
+      responses:
+        '204': { description: Stopped. }
+        default: { $ref: '#/components/responses/Problem' }
+
+  # ───────────────────────────── Transactions ─────────────────────────────
+  /transactions:
+    get:
+      tags: [Transactions]
+      operationId: listTransactions
+      parameters:
+        - { name: role, in: query, schema: { type: string, enum: [BUYER, SELLER] } }
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: My transactions.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Transaction' }
+                  nextCursor: { type: [string, 'null'] }
+        default: { $ref: '#/components/responses/Problem' }
+  /transactions/{transactionId}:
+    get:
+      tags: [Transactions]
+      operationId: getTransaction
+      parameters: [{ $ref: '#/components/parameters/TransactionId' }]
+      responses:
+        '200':
+          description: Transaction with escrow state.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Transaction' }
+        default: { $ref: '#/components/responses/Problem' }
+  /transactions/{transactionId}/payment:
+    post:
+      tags: [Transactions]
+      operationId: createPayment
+      summary: Buyer starts the escrow payment. Returns what the provider's mobile SDK needs.
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fulfilment]
+              properties:
+                fulfilment: { $ref: '#/components/schemas/Fulfilment' }
+      responses:
+        '200':
+          description: Provider-specific client parameters. Card data never touches our servers.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaymentSheet' }
+        default: { $ref: '#/components/responses/Problem' }
+  /transactions/{transactionId}/handover-code:
+    get:
+      tags: [Transactions]
+      operationId: getHandoverCode
+      summary: Buyer only. Short-lived signed token to render as a QR code at the meeting.
+      description: |
+        Available once escrow is FUNDED. The token rotates every 60 seconds; the app refreshes it
+        while the QR screen is visible. `fallbackCode` is a 6-digit code for when the camera fails.
+      parameters: [{ $ref: '#/components/parameters/TransactionId' }]
+      responses:
+        '200':
+          description: Token to show.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [qrPayload, fallbackCode, expiresAt]
+                properties:
+                  qrPayload: { type: string }
+                  fallbackCode: { type: string, pattern: '^[0-9]{6}$' }
+                  expiresAt: { type: string, format: date-time }
+        '409': { $ref: '#/components/responses/Problem' }
+        default: { $ref: '#/components/responses/Problem' }
+  /transactions/{transactionId}/handover:
+    post:
+      tags: [Transactions]
+      operationId: confirmHandover
+      summary: Seller only. Submit the scanned QR payload; escrow is released and the passport transfers.
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                qrPayload: { type: string }
+                fallbackCode: { type: string, pattern: '^[0-9]{6}$' }
+      responses:
+        '200':
+          description: Released.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Transaction' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+        default: { $ref: '#/components/responses/Problem' }
+  /transactions/{transactionId}/shipment:
+    put:
+      tags: [Transactions]
+      operationId: setShipment
+      summary: Seller only. Attach courier and tracking number for a shipped order.
+      parameters: [{ $ref: '#/components/parameters/TransactionId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [carrier, trackingNumber]
+              properties:
+                carrier: { type: string }
+                trackingNumber: { type: string }
+      responses:
+        '200':
+          description: Updated.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Transaction' }
+        default: { $ref: '#/components/responses/Problem' }
+  /transactions/{transactionId}/receipt:
+    post:
+      tags: [Transactions]
+      operationId: confirmReceipt
+      summary: Buyer confirms a courier delivery. Otherwise escrow auto-releases 48h after delivery without a dispute.
+      parameters: [{ $ref: '#/components/parameters/TransactionId' }]
+      responses:
+        '200':
+          description: Released.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Transaction' }
+        default: { $ref: '#/components/responses/Problem' }
+  /transactions/{transactionId}/cancel:
+    post:
+      tags: [Transactions]
+      operationId: cancelTransaction
+      summary: Cancel before handover; a funded escrow is refunded in full.
+      parameters: [{ $ref: '#/components/parameters/TransactionId' }]
+      responses:
+        '200':
+          description: Cancelled.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Transaction' }
+        default: { $ref: '#/components/responses/Problem' }
+  /transactions/{transactionId}/dispute:
+    post:
+      tags: [Transactions]
+      operationId: openDispute
+      summary: Freeze the escrow and send the case to human review.
+      parameters: [{ $ref: '#/components/parameters/TransactionId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, enum: [NOT_RECEIVED, NOT_AS_DESCRIBED, DAMAGED, OTHER] }
+                description: { type: string, maxLength: 2000 }
+                mediaIds:
+                  type: array
+                  items: { $ref: '#/components/schemas/Id' }
+      responses:
+        '201':
+          description: Dispute opened.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Transaction' }
+        default: { $ref: '#/components/responses/Problem' }
+
+  # ───────────────────────────── Reviews ─────────────────────────────
+  /transactions/{transactionId}/review:
+    post:
+      tags: [Reviews]
+      operationId: createReview
+      summary: Attribute-based review. Only for completed escrow transactions, one per party.
+      parameters: [{ $ref: '#/components/parameters/TransactionId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [attributes]
+              properties:
+                attributes:
+                  type: array
+                  description: Attributes the reviewer confirms. Omitted attributes are simply not counted.
+                  items: { $ref: '#/components/schemas/ReputationAttribute' }
+                privateNote: { type: string, maxLength: 500, description: Visible to moderators only. }
+      responses:
+        '201':
+          description: Review recorded.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Review' }
+        default: { $ref: '#/components/responses/Problem' }
+
+  # ───────────────────────────── Reports (DSA notice-and-action) ─────────────────────────────
+  /reports:
+    post:
+      tags: [Reports, Compliance]
+      operationId: createReport
+      summary: One-tap report of a listing, message or user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [targetType, targetId, reason]
+              properties:
+                targetType: { type: string, enum: [LISTING, MESSAGE, USER, WANTED] }
+                targetId: { $ref: '#/components/schemas/Id' }
+                reason: { $ref: '#/components/schemas/ReportReason' }
+                details: { type: string, maxLength: 2000 }
+      responses:
+        '201':
+          description: Report received; the reporter is notified of the outcome.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Report' }
+        default: { $ref: '#/components/responses/Problem' }
+  /reports/{reportId}:
+    get:
+      tags: [Reports, Compliance]
+      operationId: getReport
+      summary: Status and, once decided, the statement of reasons. Visible to the reporter and the affected user.
+      parameters: [{ $ref: '#/components/parameters/ReportId' }]
+      responses:
+        '200':
+          description: Report.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Report' }
+        default: { $ref: '#/components/responses/Problem' }
+  /reports/{reportId}/appeal:
+    post:
+      tags: [Reports, Compliance]
+      operationId: appealReport
+      summary: Internal complaint against a moderation decision (always reviewed by a human).
+      parameters: [{ $ref: '#/components/parameters/ReportId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [statement]
+              properties:
+                statement: { type: string, maxLength: 2000 }
+      responses:
+        '202': { description: Appeal queued. }
+        default: { $ref: '#/components/responses/Problem' }
+
+  # ───────────────────────────── Vehicles ─────────────────────────────
+  /vehicles/vin/{vin}:
+    get:
+      tags: [Vehicles]
+      operationId: decodeVin
+      summary: Decode a VIN and return known mileage readings with a suspicious-mileage flag.
+      parameters:
+        - name: vin
+          in: path
+          required: true
+          schema: { type: string, pattern: '^[A-HJ-NPR-Z0-9]{17}$' }
+      responses:
+        '200':
+          description: VIN report.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VinReport' }
+        default: { $ref: '#/components/responses/Problem' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Short-lived access token (15 min). Refresh with `/auth/refresh`.
+
+  parameters:
+    Cursor: { name: cursor, in: query, schema: { type: string } }
+    Limit: { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+    Lat: { name: lat, in: query, schema: { type: number, minimum: -90, maximum: 90 } }
+    Lng: { name: lng, in: query, schema: { type: number, minimum: -180, maximum: 180 } }
+    LatRequired: { name: lat, in: query, required: true, schema: { type: number, minimum: -90, maximum: 90 } }
+    LngRequired: { name: lng, in: query, required: true, schema: { type: number, minimum: -180, maximum: 180 } }
+    RadiusKm: { name: radiusKm, in: query, schema: { type: number, minimum: 0.5, maximum: 200, default: 10 } }
+    IdempotencyKey: { name: Idempotency-Key, in: header, schema: { type: string, maxLength: 64 } }
+    UserId: { name: userId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+    CategoryId: { name: categoryId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+    UploadId: { name: uploadId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+    ListingId: { name: listingId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+    PassportId: { name: passportId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+    WantedId: { name: wantedId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+    ClosetItemId: { name: closetItemId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+    ConversationId: { name: conversationId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+    OfferId: { name: offerId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+    MeetingId: { name: meetingId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+    TransactionId: { name: transactionId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+    ReportId: { name: reportId, in: path, required: true, schema: { $ref: '#/components/schemas/Id' } }
+
+  responses:
+    Problem:
+      description: Error (RFC 9457).
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+
+  schemas:
+    Id: { type: string, format: uuid }
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: { type: string, format: uri-reference }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        code: { type: string, examples: [LISTING_MISSING_REQUIRED_SHOTS, ESCROW_NOT_FUNDED, HANDOVER_CODE_EXPIRED] }
+        errors:
+          type: object
+          description: Field-level validation messages.
+          additionalProperties:
+            type: array
+            items: { type: string }
+    Money:
+      type: object
+      required: [amountMinor, currency]
+      properties:
+        amountMinor: { type: integer, minimum: 0 }
+        currency: { type: string, enum: [RON, EUR] }
+    GeoPoint:
+      type: object
+      required: [lat, lng]
+      properties:
+        lat: { type: number }
+        lng: { type: number }
+    Place:
+      type: object
+      required: [name, location]
+      properties:
+        name: { type: string }
+        address: { type: string }
+        location: { $ref: '#/components/schemas/GeoPoint' }
+    Rect:
+      type: object
+      required: [x, y, width, height]
+      properties:
+        x: { type: number, minimum: 0, maximum: 1 }
+        y: { type: number, minimum: 0, maximum: 1 }
+        width: { type: number, minimum: 0, maximum: 1 }
+        height: { type: number, minimum: 0, maximum: 1 }
+    Attributes:
+      type: object
+      description: Category-specific attributes (brand, size, storageGb...). Keys are defined by the category.
+      additionalProperties: true
+
+    # ── Auth / user ──
+    TokenPair:
+      type: object
+      required: [accessToken, refreshToken, expiresInSeconds]
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        expiresInSeconds: { type: integer }
+    AuthSession:
+      allOf:
+        - $ref: '#/components/schemas/TokenPair'
+        - type: object
+          required: [user, isNewUser]
+          properties:
+            user: { $ref: '#/components/schemas/Me' }
+            isNewUser: { type: boolean }
+    VerificationTier:
+      type: string
+      enum: [PHONE, EMAIL, IDENTITY]
+      description: Each tier raises transaction limits.
+    SellerType:
+      type: string
+      enum: [OCCASIONAL, PROFESSIONAL]
+      description: Professional sellers (traders under DSA art. 30) must provide traceability data and are labelled.
+    ReputationAttribute:
+      type: string
+      enum: [PUNCTUAL, AS_DESCRIBED, RESPONDS_FAST, CAREFUL_PACKAGING, FAIR_NEGOTIATION]
+    Badge:
+      type: object
+      required: [attribute, confirmations]
+      description: Shown only above a minimum number of confirmations. Never averaged.
+      properties:
+        attribute: { $ref: '#/components/schemas/ReputationAttribute' }
+        confirmations: { type: integer }
+    PublicUser:
+      type: object
+      required: [id, displayName, verificationTier, sellerType, badges, memberSince]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        displayName: { type: string }
+        avatarUrl: { type: [string, 'null'], format: uri }
+        city: { type: [string, 'null'] }
+        verificationTier: { $ref: '#/components/schemas/VerificationTier' }
+        sellerType: { $ref: '#/components/schemas/SellerType' }
+        badges:
+          type: array
+          items: { $ref: '#/components/schemas/Badge' }
+        completedTransactions: { type: integer }
+        memberSince: { type: string, format: date }
+        traderInfo:
+          description: Present only for professional sellers (DSA traceability).
+          type: [object, 'null']
+          properties:
+            legalName: { type: string }
+            registrationNumber: { type: string }
+            address: { type: string }
+            contactEmail: { type: string, format: email }
+    Me:
+      allOf:
+        - $ref: '#/components/schemas/PublicUser'
+        - type: object
+          required: [phone, locale, currency, limits]
+          properties:
+            phone: { type: string }
+            email: { type: [string, 'null'], format: email }
+            emailVerified: { type: boolean }
+            locale: { type: string, enum: [ro, en] }
+            currency: { type: string, enum: [RON, EUR] }
+            homeLocation:
+              oneOf:
+                - $ref: '#/components/schemas/GeoPoint'
+                - type: 'null'
+            limits:
+              type: object
+              required: [maxTransaction, monthlyVolume]
+              properties:
+                maxTransaction: { $ref: '#/components/schemas/Money' }
+                monthlyVolume: { $ref: '#/components/schemas/Money' }
+            onboardingCompleted: { type: boolean }
+    MeUpdate:
+      type: object
+      properties:
+        displayName: { type: string, minLength: 2, maxLength: 40 }
+        avatarMediaId: { $ref: '#/components/schemas/Id' }
+        locale: { type: string, enum: [ro, en] }
+        currency: { type: string, enum: [RON, EUR] }
+        homeLocation: { $ref: '#/components/schemas/GeoPoint' }
+        interestCategoryIds:
+          type: array
+          items: { $ref: '#/components/schemas/Id' }
+        onboardingCompleted: { type: boolean }
+    ConsentPurpose:
+      type: string
+      enum: [TERMS, PRIVACY, MARKETING, ANALYTICS, LOCATION, AI_PHOTO_PROCESSING]
+    Consent:
+      type: object
+      required: [purpose, granted, policyVersion, updatedAt]
+      properties:
+        purpose: { $ref: '#/components/schemas/ConsentPurpose' }
+        granted: { type: boolean }
+        policyVersion: { type: string }
+        updatedAt: { type: string, format: date-time }
+    NotificationPreferences:
+      type: object
+      description: One switch per push topic.
+      properties:
+        messages: { type: boolean }
+        offers: { type: boolean }
+        transactions: { type: boolean }
+        wantedMatches: { type: boolean }
+        closetAlerts: { type: boolean }
+        priceDrops: { type: boolean }
+        collections: { type: boolean }
+        quietHours:
+          type: [object, 'null']
+          properties:
+            from: { type: string, examples: ['22:00'] }
+            to: { type: string, examples: ['08:00'] }
+    PayoutAccount:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [NOT_STARTED, PENDING, ACTIVE, RESTRICTED] }
+        provider: { type: string, enum: [STRIPE, NETOPIA] }
+        requirementsDue:
+          type: array
+          items: { type: string }
+    TaxProfile:
+      type: object
+      required: [required, salesCountThisYear, salesTotalThisYear]
+      properties:
+        required: { type: boolean }
+        salesCountThisYear: { type: integer }
+        salesTotalThisYear: { $ref: '#/components/schemas/Money' }
+        submitted: { type: boolean }
+    TaxProfileInput:
+      type: object
+      required: [legalName, taxIdentificationNumber, dateOfBirth, address, countryOfResidence]
+      properties:
+        legalName: { type: string }
+        taxIdentificationNumber: { type: string, description: CNP for Romanian residents. Stored encrypted. }
+        dateOfBirth: { type: string, format: date }
+        address: { type: string }
+        countryOfResidence: { type: string, minLength: 2, maxLength: 2 }
+
+    # ── Catalog ──
+    Category:
+      type: object
+      required: [id, slug, name]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        parentId: { type: [string, 'null'], format: uuid }
+        slug: { type: string }
+        name: { type: string }
+        iconKey: { type: string }
+        isVehicle: { type: boolean }
+    ConditionGrade:
+      type: integer
+      minimum: 1
+      maximum: 5
+      description: 5 = new / unused, 4 = like new, 3 = good, 2 = visible wear, 1 = for parts or repair.
+    CaptureGuide:
+      type: object
+      required: [categoryId, version, shots, conditionCriteria]
+      properties:
+        categoryId: { $ref: '#/components/schemas/Id' }
+        version: { type: integer }
+        shots:
+          type: array
+          items:
+            type: object
+            required: [key, title, hint, required]
+            properties:
+              key: { type: string, examples: [screen_on, battery_health, label, defects] }
+              title: { type: string }
+              hint: { type: string }
+              required: { type: boolean }
+              overlay: { type: string, enum: [NONE, PHONE_FRONT, PHONE_BACK, GARMENT_FLAT, LABEL, RULER], default: NONE }
+        conditionCriteria:
+          type: array
+          description: Yes/no checks; the grade is derived from the answers, not self-assessed.
+          items:
+            type: object
+            required: [key, question]
+            properties:
+              key: { type: string }
+              question: { type: string }
+              maxGradeIfNo: { $ref: '#/components/schemas/ConditionGrade' }
+    SafeSpot:
+      type: object
+      required: [id, place, type]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        place: { $ref: '#/components/schemas/Place' }
+        type: { type: string, enum: [POLICE_STATION, MALL, FUEL_STATION, PARCEL_LOCKER, TRANSIT_HUB] }
+        openNow: { type: [boolean, 'null'] }
+        hasCctv: { type: boolean }
+    Home:
+      type: object
+      required: [nearbyToday, collections, matches]
+      properties:
+        nearbyToday:
+          type: array
+          maxItems: 30
+          items: { $ref: '#/components/schemas/ListingSummary' }
+        collections:
+          type: array
+          maxItems: 6
+          items:
+            type: object
+            required: [id, title, items]
+            properties:
+              id: { $ref: '#/components/schemas/Id' }
+              title: { type: string }
+              subtitle: { type: string }
+              items:
+                type: array
+                maxItems: 12
+                items: { $ref: '#/components/schemas/ListingSummary' }
+        matches:
+          type: array
+          maxItems: 10
+          items: { $ref: '#/components/schemas/Match' }
+
+    # ── Media ──
+    UploadSession:
+      type: object
+      required: [id, blockUrlTemplate, blockSizeBytes, receivedBlockIds, expiresAt]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        blockUrlTemplate: { type: string, description: 'Pre-signed URL containing `{blockId}`.' }
+        blockSizeBytes: { type: integer }
+        receivedBlockIds:
+          type: array
+          items: { type: string }
+        expiresAt: { type: string, format: date-time }
+    Media:
+      type: object
+      required: [id, url, status]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        url: { type: string, format: uri }
+        thumbnailUrl: { type: string, format: uri }
+        width: { type: integer }
+        height: { type: integer }
+        shotKey: { type: [string, 'null'] }
+        status: { type: string, enum: [PROCESSING, READY, REJECTED] }
+
+    # ── Listings ──
+    ListingKind: { type: string, enum: [SINGLE, BUNDLE] }
+    ListingStatus:
+      type: string
+      enum: [DRAFT, IN_REVIEW, ACTIVE, RESERVED, SOLD, WITHDRAWN, REJECTED]
+    AutoPriceDrop:
+      type: object
+      required: [percentPerStep, intervalDays, floor]
+      properties:
+        percentPerStep: { type: integer, minimum: 1, maximum: 30 }
+        intervalDays: { type: integer, minimum: 1, maximum: 30, default: 7 }
+        floor: { $ref: '#/components/schemas/Money' }
+        nextDropAt: { type: [string, 'null'], format: date-time, readOnly: true }
+    BundleItem:
+      type: object
+      required: [title, price]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        title: { type: string }
+        price: { $ref: '#/components/schemas/Money' }
+        mediaId: { $ref: '#/components/schemas/Id' }
+        condition: { $ref: '#/components/schemas/ConditionGrade' }
+        sold: { type: boolean, readOnly: true }
+    ListingInput:
+      type: object
+      description: All fields optional on a draft; `publishListing` enforces completeness.
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        kind: { $ref: '#/components/schemas/ListingKind' }
+        categoryId: { $ref: '#/components/schemas/Id' }
+        title: { type: string, maxLength: 80 }
+        description: { type: string, maxLength: 4000 }
+        attributes: { $ref: '#/components/schemas/Attributes' }
+        price: { $ref: '#/components/schemas/Money' }
+        conditionAnswers:
+          type: object
+          description: Answers to the capture guide's condition criteria (key -> yes/no).
+          additionalProperties: { type: boolean }
+        captureGuideVersion: { type: integer }
+        mediaIds:
+          type: array
+          maxItems: 12
+          items: { $ref: '#/components/schemas/Id' }
+        location: { $ref: '#/components/schemas/GeoPoint' }
+        acceptsBarter: { type: boolean }
+        barterWishes: { type: string, maxLength: 200 }
+        fulfilmentOptions:
+          type: array
+          items: { $ref: '#/components/schemas/Fulfilment' }
+        autoPriceDrop: { $ref: '#/components/schemas/AutoPriceDrop' }
+        passport: { $ref: '#/components/schemas/ItemPassportInput' }
+        bundleItems:
+          type: array
+          maxItems: 100
+          items: { $ref: '#/components/schemas/BundleItem' }
+        bundleDiscountTiers:
+          type: array
+          items:
+            type: object
+            required: [minItems, percent]
+            properties:
+              minItems: { type: integer, minimum: 2 }
+              percent: { type: integer, minimum: 1, maximum: 80 }
+        vehicle: { $ref: '#/components/schemas/VehicleDetails' }
+    ListingSummary:
+      type: object
+      required: [id, kind, title, price, status, approximateLocation]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        kind: { $ref: '#/components/schemas/ListingKind' }
+        title: { type: string }
+        price: { $ref: '#/components/schemas/Money' }
+        originalPrice:
+          description: Set when an automatic price drop has been applied.
+          oneOf:
+            - $ref: '#/components/schemas/Money'
+            - type: 'null'
+        condition: { $ref: '#/components/schemas/ConditionGrade' }
+        coverUrl: { type: string, format: uri }
+        status: { $ref: '#/components/schemas/ListingStatus' }
+        approximateLocation:
+          description: Rounded to ~300 m. The exact address is never exposed.
+          $ref: '#/components/schemas/GeoPoint'
+        distanceKm: { type: [number, 'null'] }
+        acceptsBarter: { type: boolean }
+        hasPassport: { type: boolean }
+        saved: { type: boolean }
+        updatedAt: { type: string, format: date-time }
+    Listing:
+      allOf:
+        - $ref: '#/components/schemas/ListingSummary'
+        - type: object
+          required: [seller, media, createdAt]
+          properties:
+            categoryId: { $ref: '#/components/schemas/Id' }
+            description: { type: string }
+            attributes: { $ref: '#/components/schemas/Attributes' }
+            seller: { $ref: '#/components/schemas/PublicUser' }
+            media:
+              type: array
+              items: { $ref: '#/components/schemas/Media' }
+            missingRequiredShots:
+              type: array
+              description: Draft only - shot keys still needed before publishing.
+              items: { type: string }
+            barterWishes: { type: [string, 'null'] }
+            fulfilmentOptions:
+              type: array
+              items: { $ref: '#/components/schemas/Fulfilment' }
+            autoPriceDrop:
+              oneOf:
+                - $ref: '#/components/schemas/AutoPriceDrop'
+                - type: 'null'
+            passportId: { type: [string, 'null'], format: uuid }
+            passportSummary:
+              type: [object, 'null']
+              properties:
+                purchaseYear: { type: [integer, 'null'] }
+                ownerCount: { type: integer }
+                hasReceipt: { type: boolean }
+                repairCount: { type: integer }
+            bundleItems:
+              type: array
+              items: { $ref: '#/components/schemas/BundleItem' }
+            vehicle:
+              oneOf:
+                - $ref: '#/components/schemas/VehicleDetails'
+                - type: 'null'
+            moderationNote: { type: [string, 'null'], description: Owner only - why the listing is in review or rejected. }
+            createdAt: { type: string, format: date-time }
+    ListingPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ListingSummary' }
+        nextCursor: { type: [string, 'null'] }
+        totalEstimate: { type: integer }
+    ListingSuggestion:
+      type: object
+      required: [confidence]
+      properties:
+        title: { type: string }
+        categoryId: { $ref: '#/components/schemas/Id' }
+        description: { type: string }
+        attributes: { $ref: '#/components/schemas/Attributes' }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+    PriceEstimate:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [OK, INSUFFICIENT_DATA] }
+        low: { $ref: '#/components/schemas/Money' }
+        median: { $ref: '#/components/schemas/Money' }
+        high: { $ref: '#/components/schemas/Money' }
+        sampleSize: { type: integer }
+        periodDays: { type: integer }
+
+    # ── Passport ──
+    ItemPassportInput:
+      type: object
+      properties:
+        purchaseYear: { type: integer, minimum: 1950 }
+        purchasePrice: { $ref: '#/components/schemas/Money' }
+        receiptMediaId: { $ref: '#/components/schemas/Id' }
+        sellingReason: { type: string, enum: [UPGRADE, NOT_USED, MOVING, GIFT_UNWANTED, WRONG_SIZE, OTHER] }
+        sellingReasonNote: { type: string, maxLength: 200 }
+        serialNumberLast4: { type: string, maxLength: 4 }
+    PassportEvent:
+      type: object
+      required: [id, type, occurredOn]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        type: { type: string, enum: [CREATED, REPAIR, SERVICE, NOTE, OWNERSHIP_TRANSFER] }
+        occurredOn: { type: string, format: date }
+        description: { type: [string, 'null'] }
+        media:
+          type: array
+          items: { $ref: '#/components/schemas/Media' }
+        verified: { type: boolean, description: True for system-written events (e.g. in-app ownership transfer). }
+    ItemPassport:
+      allOf:
+        - $ref: '#/components/schemas/ItemPassportInput'
+        - type: object
+          required: [id, ownerCount, events]
+          properties:
+            id: { $ref: '#/components/schemas/Id' }
+            ownerCount: { type: integer, minimum: 1 }
+            isCurrentOwner: { type: boolean }
+            receipt:
+              oneOf:
+                - $ref: '#/components/schemas/Media'
+                - type: 'null'
+            events:
+              type: array
+              items: { $ref: '#/components/schemas/PassportEvent' }
+
+    # ── Wanted / closet / matches ──
+    WantedInput:
+      type: object
+      required: [categoryId, title]
+      properties:
+        categoryId: { $ref: '#/components/schemas/Id' }
+        title: { type: string, maxLength: 80 }
+        description: { type: string, maxLength: 1000 }
+        attributes: { $ref: '#/components/schemas/Attributes' }
+        budgetMax: { $ref: '#/components/schemas/Money' }
+        minCondition: { $ref: '#/components/schemas/ConditionGrade' }
+        location: { $ref: '#/components/schemas/GeoPoint' }
+        radiusKm: { type: number }
+        acceptsShipping: { type: boolean }
+    Wanted:
+      allOf:
+        - $ref: '#/components/schemas/WantedInput'
+        - type: object
+          required: [id, requester, status, createdAt]
+          properties:
+            id: { $ref: '#/components/schemas/Id' }
+            requester: { $ref: '#/components/schemas/PublicUser' }
+            status: { type: string, enum: [OPEN, FULFILLED, CLOSED, EXPIRED] }
+            createdAt: { type: string, format: date-time }
+            expiresAt: { type: string, format: date-time }
+    ClosetItemInput:
+      type: object
+      properties:
+        categoryId: { $ref: '#/components/schemas/Id' }
+        title: { type: string, maxLength: 80 }
+        attributes: { $ref: '#/components/schemas/Attributes' }
+        mediaIds:
+          type: array
+          items: { $ref: '#/components/schemas/Id' }
+        condition: { $ref: '#/components/schemas/ConditionGrade' }
+        passport: { $ref: '#/components/schemas/ItemPassportInput' }
+        alertOnWanted: { type: boolean, default: true }
+        alertPriceAbove: { $ref: '#/components/schemas/Money' }
+    ClosetItem:
+      allOf:
+        - $ref: '#/components/schemas/ClosetItemInput'
+        - type: object
+          required: [id, passportId, createdAt]
+          properties:
+            id: { $ref: '#/components/schemas/Id' }
+            passportId: { $ref: '#/components/schemas/Id' }
+            media:
+              type: array
+              items: { $ref: '#/components/schemas/Media' }
+            marketEstimate:
+              oneOf:
+                - $ref: '#/components/schemas/PriceEstimate'
+                - type: 'null'
+            activeListingId: { type: [string, 'null'], format: uuid }
+            createdAt: { type: string, format: date-time }
+    Match:
+      type: object
+      required: [id, wanted, score, createdAt]
+      description: A wanted request paired with one of my listings or closet items (or, for buyers, a listing paired with my request).
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        wanted: { $ref: '#/components/schemas/Wanted' }
+        listing:
+          oneOf:
+            - $ref: '#/components/schemas/ListingSummary'
+            - type: 'null'
+        closetItemId: { type: [string, 'null'], format: uuid }
+        score: { type: number, minimum: 0, maximum: 1 }
+        createdAt: { type: string, format: date-time }
+
+    # ── Chat / offers / meetings ──
+    Conversation:
+      type: object
+      required: [id, counterpart, contactUnlocked, unreadCount, updatedAt]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        counterpart: { $ref: '#/components/schemas/PublicUser' }
+        listing:
+          oneOf:
+            - $ref: '#/components/schemas/ListingSummary'
+            - type: 'null'
+        wantedId: { type: [string, 'null'], format: uuid }
+        lastMessage:
+          oneOf:
+            - $ref: '#/components/schemas/Message'
+            - type: 'null'
+        unreadCount: { type: integer }
+        contactUnlocked: { type: boolean, description: True after a confirmed transaction; masking is lifted. }
+        activeTransactionId: { type: [string, 'null'], format: uuid }
+        updatedAt: { type: string, format: date-time }
+    Message:
+      type: object
+      required: [id, conversationId, senderId, type, sentAt]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        conversationId: { $ref: '#/components/schemas/Id' }
+        clientMessageId: { type: [string, 'null'] }
+        senderId: { $ref: '#/components/schemas/Id' }
+        type: { type: string, enum: [TEXT, IMAGE, OFFER, MEETING, SYSTEM] }
+        text: { type: [string, 'null'], description: Already masked when applicable. }
+        maskedSpans:
+          type: array
+          description: Ranges of `text` replaced by the server, so clients can render an explanation chip.
+          items:
+            type: object
+            required: [start, length, kind]
+            properties:
+              start: { type: integer }
+              length: { type: integer }
+              kind: { type: string, enum: [LINK, PHONE, IBAN, EMAIL] }
+        safetyNotice:
+          type: [object, 'null']
+          description: Contextual scam warning shown next to this message.
+          properties:
+            pattern: { type: string, enum: [FAKE_COURIER_LINK, PAYMENT_OUTSIDE_APP, ADVANCE_PAYMENT, OFF_PLATFORM_CONTACT] }
+            title: { type: string }
+            body: { type: string }
+        media:
+          oneOf:
+            - $ref: '#/components/schemas/Media'
+            - type: 'null'
+        offerId: { type: [string, 'null'], format: uuid }
+        meetingId: { type: [string, 'null'], format: uuid }
+        sentAt: { type: string, format: date-time }
+        readAt: { type: [string, 'null'], format: date-time }
+    OfferInput:
+      type: object
+      description: At least one of `cash` or `barterItems` is required. Cash direction is given by `cashPayer`.
+      properties:
+        cash: { $ref: '#/components/schemas/Money' }
+        cashPayer: { type: string, enum: [BUYER, SELLER], default: BUYER }
+        barterItems:
+          type: array
+          maxItems: 5
+          items:
+            type: object
+            description: Exactly one of `listingId` or `closetItemId`.
+            properties:
+              listingId: { $ref: '#/components/schemas/Id' }
+              closetItemId: { $ref: '#/components/schemas/Id' }
+        bundleQuoteId: { $ref: '#/components/schemas/Id' }
+        note: { type: string, maxLength: 300 }
+    Offer:
+      allOf:
+        - $ref: '#/components/schemas/OfferInput'
+        - type: object
+          required: [id, conversationId, listingId, fromUserId, status, expiresAt]
+          properties:
+            id: { $ref: '#/components/schemas/Id' }
+            conversationId: { $ref: '#/components/schemas/Id' }
+            listingId: { $ref: '#/components/schemas/Id' }
+            fromUserId: { $ref: '#/components/schemas/Id' }
+            status: { type: string, enum: [PENDING, ACCEPTED, DECLINED, COUNTERED, EXPIRED, WITHDRAWN] }
+            counterOfOfferId: { type: [string, 'null'], format: uuid }
+            barterPreview:
+              type: array
+              items: { $ref: '#/components/schemas/ListingSummary' }
+            transactionId: { type: [string, 'null'], format: uuid }
+            expiresAt: { type: string, format: date-time }
+    Meeting:
+      type: object
+      required: [id, conversationId, startsAt, place, status]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        conversationId: { $ref: '#/components/schemas/Id' }
+        proposedByUserId: { $ref: '#/components/schemas/Id' }
+        startsAt: { type: string, format: date-time }
+        place: { $ref: '#/components/schemas/Place' }
+        safeSpotId: { type: [string, 'null'], format: uuid }
+        status: { type: string, enum: [PROPOSED, CONFIRMED, DECLINED, CANCELLED, DONE] }
+
+    # ── Transactions / escrow ──
+    Fulfilment: { type: string, enum: [MEETUP, COURIER] }
+    EscrowStatus:
+      type: string
+      enum: [NONE, AWAITING_PAYMENT, FUNDED, RELEASED, REFUNDED, FROZEN]
+      description: NONE is used for pure barter with no cash difference.
+    Escrow:
+      type: object
+      required: [status]
+      properties:
+        status: { $ref: '#/components/schemas/EscrowStatus' }
+        amount: { $ref: '#/components/schemas/Money' }
+        platformFee: { $ref: '#/components/schemas/Money' }
+        sellerPayout: { $ref: '#/components/schemas/Money' }
+        fundedAt: { type: [string, 'null'], format: date-time }
+        autoReleaseAt: { type: [string, 'null'], format: date-time, description: Courier only - 48h after delivery. }
+        releasedAt: { type: [string, 'null'], format: date-time }
+    Transaction:
+      type: object
+      required: [id, listing, buyer, seller, status, escrow, createdAt]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        offerId: { $ref: '#/components/schemas/Id' }
+        conversationId: { $ref: '#/components/schemas/Id' }
+        listing: { $ref: '#/components/schemas/ListingSummary' }
+        barterItems:
+          type: array
+          items: { $ref: '#/components/schemas/ListingSummary' }
+        buyer: { $ref: '#/components/schemas/PublicUser' }
+        seller: { $ref: '#/components/schemas/PublicUser' }
+        myRole: { type: string, enum: [BUYER, SELLER] }
+        fulfilment:
+          oneOf:
+            - $ref: '#/components/schemas/Fulfilment'
+            - type: 'null'
+        status:
+          type: string
+          enum: [AWAITING_PAYMENT, PAID, SHIPPED, DELIVERED, COMPLETED, CANCELLED, DISPUTED, REFUNDED]
+        escrow: { $ref: '#/components/schemas/Escrow' }
+        meeting:
+          oneOf:
+            - $ref: '#/components/schemas/Meeting'
+            - type: 'null'
+        shipment:
+          type: [object, 'null']
+          properties:
+            carrier: { type: string }
+            trackingNumber: { type: string }
+            deliveredAt: { type: [string, 'null'], format: date-time }
+        canReview: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        completedAt: { type: [string, 'null'], format: date-time }
+    PaymentSheet:
+      type: object
+      required: [provider, amount]
+      properties:
+        provider: { type: string, enum: [STRIPE, NETOPIA] }
+        amount: { $ref: '#/components/schemas/Money' }
+        platformFee: { $ref: '#/components/schemas/Money' }
+        stripe:
+          type: [object, 'null']
+          description: Parameters for the Stripe PaymentSheet SDK.
+          properties:
+            publishableKey: { type: string }
+            paymentIntentClientSecret: { type: string }
+            customerId: { type: string }
+            ephemeralKeySecret: { type: string }
+        redirectUrl:
+          type: [string, 'null']
+          format: uri
+          description: For redirect-based providers (e.g. Netopia).
+
+    # ── Reviews / reports ──
+    Review:
+      type: object
+      required: [id, transactionId, attributes, createdAt]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        transactionId: { $ref: '#/components/schemas/Id' }
+        attributes:
+          type: array
+          items: { $ref: '#/components/schemas/ReputationAttribute' }
+        createdAt: { type: string, format: date-time }
+    ReportReason:
+      type: string
+      enum: [SCAM, COUNTERFEIT, PROHIBITED_ITEM, ILLEGAL_CONTENT, HARASSMENT, MISLEADING, UNDECLARED_TRADER, OTHER]
+    Report:
+      type: object
+      required: [id, targetType, targetId, reason, status, createdAt]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        targetType: { type: string, enum: [LISTING, MESSAGE, USER, WANTED] }
+        targetId: { $ref: '#/components/schemas/Id' }
+        reason: { $ref: '#/components/schemas/ReportReason' }
+        status: { type: string, enum: [RECEIVED, IN_REVIEW, ACTION_TAKEN, NO_ACTION, APPEALED] }
+        statementOfReasons:
+          type: [object, 'null']
+          description: DSA art. 17 statement, sent to the affected user.
+          properties:
+            decision: { type: string, enum: [REMOVED, RESTRICTED, ACCOUNT_SUSPENDED, NONE] }
+            legalOrTermsGround: { type: string }
+            explanation: { type: string }
+            automated: { type: boolean }
+            decidedAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+
+    # ── Vehicles ──
+    VehicleDetails:
+      type: object
+      properties:
+        vin: { type: string }
+        make: { type: string }
+        model: { type: string }
+        year: { type: integer }
+        mileageKm: { type: integer }
+        fuel: { type: string, enum: [PETROL, DIESEL, HYBRID, ELECTRIC, LPG] }
+        itpValidUntil: { type: [string, 'null'], format: date }
+        documentMediaIds:
+          type: array
+          items: { $ref: '#/components/schemas/Id' }
+    VinReport:
+      type: object
+      required: [vin, valid, mileageSuspicious]
+      properties:
+        vin: { type: string }
+        valid: { type: boolean }
+        make: { type: [string, 'null'] }
+        model: { type: [string, 'null'] }
+        year: { type: [integer, 'null'] }
+        mileageReadings:
+          type: array
+          items:
+            type: object
+            required: [date, km, source]
+            properties:
+              date: { type: string, format: date }
+              km: { type: integer }
+              source: { type: string, enum: [PASSPORT, LISTING, EXTERNAL] }
+        mileageSuspicious: { type: boolean }
+        mileageNote: { type: [string, 'null'] }
