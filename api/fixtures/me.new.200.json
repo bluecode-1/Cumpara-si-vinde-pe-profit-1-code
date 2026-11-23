@@ -1,0 +1,23 @@
+{
+  "id": "0193f6a0-2a00-7000-8000-000000000001",
+  "displayName": "",
+  "avatarUrl": null,
+  "city": null,
+  "verificationTier": "PHONE",
+  "sellerType": "OCCASIONAL",
+  "badges": [],
+  "completedTransactions": 0,
+  "memberSince": "2026-11-23",
+  "traderInfo": null,
+  "phone": "+40712345678",
+  "email": null,
+  "emailVerified": false,
+  "locale": "ro",
+  "currency": "RON",
+  "homeLocation": null,
+  "limits": {
+    "maxTransaction": { "amountMinor": 150000, "currency": "RON" },
+    "monthlyVolume": { "amountMinor": 500000, "currency": "RON" }
+  },
+  "onboardingCompleted": false
+}

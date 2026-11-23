@@ -1,6 +1,6 @@
 # Direcții de design — de ales înainte de Pasul 4
 
-> Stare: **în așteptarea alegerii**. Implementarea fluxurilor pornește de la direcția aleasă, prin `design/tokens.json`.
+> Stare: **aleasă direcția B, „Livadă”**. Implementarea fluxurilor pornește de la direcția aleasă, prin `design/tokens.json`.
 
 ## Ce evităm
 

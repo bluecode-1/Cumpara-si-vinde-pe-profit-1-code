@@ -1,0 +1,7 @@
+{
+  "type": "https://api.profitnet.example/problems/otp-invalid",
+  "title": "Cod incorect",
+  "status": 422,
+  "detail": "Codul introdus nu este corect sau a expirat.",
+  "code": "OTP_INVALID"
+}

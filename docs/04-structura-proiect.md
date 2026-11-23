@@ -1,6 +1,6 @@
 # Pasul 3 — Structura de proiect pe platforme
 
-> Stare: **în așteptarea confirmării**.
+> Stare: **confirmat**.
 
 ## 1. Depozitul (monorepo)
 

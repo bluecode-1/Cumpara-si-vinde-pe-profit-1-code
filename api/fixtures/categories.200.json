@@ -1,0 +1,66 @@
+[
+  {
+    "id": "0193f6a0-3c00-7000-8000-000000000001",
+    "parentId": null,
+    "slug": "haine",
+    "name": "Haine și încălțăminte",
+    "iconKey": "clothing",
+    "isVehicle": false
+  },
+  {
+    "id": "0193f6a0-3c00-7000-8000-000000000002",
+    "parentId": null,
+    "slug": "electronice",
+    "name": "Electronice",
+    "iconKey": "electronics",
+    "isVehicle": false
+  },
+  {
+    "id": "0193f6a0-3c00-7000-8000-000000000003",
+    "parentId": null,
+    "slug": "mobila",
+    "name": "Mobilă",
+    "iconKey": "furniture",
+    "isVehicle": false
+  },
+  {
+    "id": "0193f6a0-3c00-7000-8000-000000000004",
+    "parentId": null,
+    "slug": "carti",
+    "name": "Cărți",
+    "iconKey": "books",
+    "isVehicle": false
+  },
+  {
+    "id": "0193f6a0-3c00-7000-8000-000000000005",
+    "parentId": null,
+    "slug": "jucarii",
+    "name": "Jucării și copii",
+    "iconKey": "toys",
+    "isVehicle": false
+  },
+  {
+    "id": "0193f6a0-3c00-7000-8000-000000000006",
+    "parentId": null,
+    "slug": "sport",
+    "name": "Sport și timp liber",
+    "iconKey": "sport",
+    "isVehicle": false
+  },
+  {
+    "id": "0193f6a0-3c00-7000-8000-000000000007",
+    "parentId": null,
+    "slug": "casa",
+    "name": "Casă și grădină",
+    "iconKey": "home",
+    "isVehicle": false
+  },
+  {
+    "id": "0193f6a0-3c00-7000-8000-000000000008",
+    "parentId": null,
+    "slug": "auto",
+    "name": "Auto și piese",
+    "iconKey": "vehicle",
+    "isVehicle": true
+  }
+]
