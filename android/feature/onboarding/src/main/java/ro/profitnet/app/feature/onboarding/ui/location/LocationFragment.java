@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.fragment.NavHostFragment;
@@ -50,6 +51,7 @@ public class LocationFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        ViewCompat.setAccessibilityHeading(binding.title, true);
         viewModel = new ViewModelProvider(this).get(LocationViewModel.class);
 
         binding.useMyLocationButton.setOnClickListener(v -> useMyLocation());

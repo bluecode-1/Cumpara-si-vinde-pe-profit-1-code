@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Textele fluxului de onboarding (docs/06-flux-onboarding.md §4). Cheile sunt comune pe platforme. -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:locale="ro">
     <string name="welcome_title">Lucrurile bune merită o a doua casă</string>
     <string name="welcome_point_passport">Fiecare obiect are un pașaport cu istoricul lui</string>
     <string name="welcome_point_handover">Plătești în siguranță și primești banii la predare</string>

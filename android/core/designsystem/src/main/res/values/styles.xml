@@ -37,11 +37,11 @@
         <item name="shapeAppearance">@style/ShapeAppearance.ProfitNet.Small</item>
     </style>
 
-    <!-- Screen scaffolding shared by the feature layouts. -->
+    <!-- Screen scaffolding shared by the feature layouts. Titles are marked as accessibility
+         headings in code (ViewCompat), because the XML attribute needs API 28. -->
     <style name="Widget.ProfitNet.ScreenTitle" parent="">
         <item name="android:textAppearance">?attr/textAppearanceHeadlineSmall</item>
         <item name="android:textColor">?attr/colorOnBackground</item>
-        <item name="android:accessibilityHeading">true</item>
     </style>
 
     <style name="Widget.ProfitNet.ScreenSubtitle" parent="">

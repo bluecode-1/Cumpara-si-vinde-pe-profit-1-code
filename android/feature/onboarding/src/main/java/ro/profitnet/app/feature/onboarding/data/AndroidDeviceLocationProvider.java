@@ -7,6 +7,7 @@ import android.location.Location;
 import android.location.LocationManager;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresPermission;
 import androidx.core.content.ContextCompat;
 import androidx.core.location.LocationManagerCompat;
 import androidx.core.os.CancellationSignal;
@@ -73,6 +74,7 @@ public final class AndroidDeviceLocationProvider implements DeviceLocationProvid
     }
 
     @Nullable
+    @RequiresPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
     private Location recentLastKnown(LocationManager manager) {
         long now = System.currentTimeMillis();
         Location best = null;
@@ -92,6 +94,7 @@ public final class AndroidDeviceLocationProvider implements DeviceLocationProvid
     }
 
     @Nullable
+    @RequiresPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
     private Location requestFreshFix(LocationManager manager) {
         String provider = null;
         for (String candidate : PROVIDERS) {

@@ -1,6 +1,6 @@
 # Pasul 4a — Fundația și fluxul de onboarding
 
-> Stare: **în lucru**. Această specificație este comună celor trei aplicații; implementările trebuie să se comporte identic.
+> Stare: **implementat pe cele trei platforme, în așteptarea confirmării**. Această specificație este comună celor trei aplicații; implementările trebuie să se comporte identic.
 
 ## 1. Decizii de UX
 
@@ -87,6 +87,9 @@
 | `error_rate_limited` | Prea multe încercări. Încearcă din nou peste câteva minute. |
 | `error_network` | Nu există conexiune la internet. Verifică rețeaua și încearcă din nou. |
 | `error_generic` | Ceva nu a mers. Încearcă din nou. |
+| `action_retry` | Reîncearcă |
+| `location_unavailable` | Nu am putut afla locația. Poți alege orașul din listă. |
+| `loading` | Se încarcă |
 
 Engleza (`en`) este a doua limbă; traducerile se adaugă în fișierele de resurse ale fiecărei platforme.
 
@@ -111,3 +114,17 @@ Modul demonstrativ este exclus din build-urile de lansare. Testele de contract d
 | Certificate pinning | `CertificatePinner`, pinuri din configurare | Validare de amprentă în adaptorul HTTP | `URLSessionDelegate` |
 
 Pinurile reale de certificat se adaugă când există domeniul de producție; până atunci mecanismul e prezent și dezactivat pentru API-ul simulat.
+
+## 7. Starea implementării
+
+| Platformă | Verificat aici | Neverificat |
+|---|---|---|
+| Android | Build de dezvoltare și de lansare (cu R8), 126 de teste unitare, lint fără erori sau avertismente, compilarea testelor Espresso | Rularea pe dispozitiv: testele Espresso, Keystore-ul real, dialogul de permisiune, TalkBack |
+| Flutter | Analiză statică fără probleme, 264 de teste (unitare, de widget, de contract) | Rularea pe dispozitiv: testul de integrare, build-urile native, stocarea securizată și locația reale |
+| iOS | Doar verificări de consistență prin scripturi (texte, dependențe între module, fixture-uri) | Tot: codul nu a fost compilat, pentru că nu există Swift în mediul de lucru |
+
+Diferențe cunoscute între platforme, de aliniat:
+
+- Textele `action_retry`, `location_unavailable` și `loading` există pe Android; Flutter are `action_retry` și un echivalent pentru `loading`; iOS nu le are încă și nu are buton de reîncercare pe ecranul de interese.
+- Fără sesiune, Android și iOS redeschid la pasul de telefon cu numărul precompletat; Flutter redeschide la `Welcome`.
+- Linkurile către Termeni și Confidențialitate lipsesc peste tot, pentru că documentele nu există încă.

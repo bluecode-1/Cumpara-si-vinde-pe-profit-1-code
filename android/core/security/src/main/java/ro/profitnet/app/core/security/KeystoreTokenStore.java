@@ -1,5 +1,6 @@
 package ro.profitnet.app.core.security;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.security.keystore.KeyGenParameterSpec;
@@ -26,7 +27,12 @@ import javax.crypto.spec.GCMParameterSpec;
  *
  * <p>If a value cannot be decrypted (key invalidated, restored data from another device) the
  * session is treated as absent and wiped, which sends the user back to sign-in.
+ *
+ * <p>Writes use {@code commit()} on purpose: a rotated refresh token must be on disk before the
+ * caller continues, otherwise a crash could leave the device with a token the server has
+ * already revoked. Callers are on background threads.
  */
+@SuppressLint("ApplySharedPref")
 public final class KeystoreTokenStore implements TokenStore {
 
     static final String PREFS_NAME = "profitnet_session";

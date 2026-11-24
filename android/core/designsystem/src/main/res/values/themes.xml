@@ -72,11 +72,5 @@
         <item name="materialButtonStyle">@style/Widget.ProfitNet.Button</item>
         <item name="borderlessButtonStyle">@style/Widget.ProfitNet.Button.Text</item>
         <item name="textInputStyle">@style/Widget.ProfitNet.TextInputLayout</item>
-
-        <!-- Edge-to-edge: transparent bars, icon contrast follows the mode. -->
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">@bool/use_light_system_bars</item>
-        <item name="android:windowLightNavigationBar">@bool/use_light_system_bars</item>
     </style>
 </resources>

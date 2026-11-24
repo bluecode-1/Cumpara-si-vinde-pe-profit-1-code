@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true">
@@ -26,7 +27,8 @@
             android:layout_marginTop="@dimen/spacing_xl"
             android:gravity="center_vertical"
             android:minHeight="@dimen/min_touch_target"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            tools:ignore="UseCompoundDrawables">
 
             <ImageView
                 android:layout_width="@dimen/onboarding_point_icon_size"
@@ -53,7 +55,8 @@
             android:layout_marginTop="@dimen/spacing_md"
             android:gravity="center_vertical"
             android:minHeight="@dimen/min_touch_target"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            tools:ignore="UseCompoundDrawables">
 
             <ImageView
                 android:layout_width="@dimen/onboarding_point_icon_size"
@@ -80,7 +83,8 @@
             android:layout_marginTop="@dimen/spacing_md"
             android:gravity="center_vertical"
             android:minHeight="@dimen/min_touch_target"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            tools:ignore="UseCompoundDrawables">
 
             <ImageView
                 android:layout_width="@dimen/onboarding_point_icon_size"

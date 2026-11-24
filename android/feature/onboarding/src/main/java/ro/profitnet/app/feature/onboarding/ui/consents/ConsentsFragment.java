@@ -37,6 +37,7 @@ public class ConsentsFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        ViewCompat.setAccessibilityHeading(binding.title, true);
         viewModel = new ViewModelProvider(this).get(ConsentsViewModel.class);
         ViewCompat.setAccessibilityHeading(binding.optionalHeader, true);
 
