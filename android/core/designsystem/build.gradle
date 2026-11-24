@@ -1,0 +1,15 @@
+plugins {
+    id 'profitnet.android-library'
+}
+
+android {
+    namespace 'ro.profitnet.app.core.designsystem'
+}
+
+dependencies {
+    implementation project(':core:common')
+
+    api libs.material
+    api libs.androidx.appcompat
+    implementation libs.androidx.core
+}

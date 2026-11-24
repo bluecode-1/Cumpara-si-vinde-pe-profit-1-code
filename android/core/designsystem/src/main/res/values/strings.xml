@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Texte comune tuturor funcționalităților. Cheile sunt aceleași pe Android, Flutter și iOS. -->
+<resources>
+    <string name="action_continue">Continuă</string>
+    <string name="action_finish">Gata</string>
+    <string name="action_logout">Ieși din cont</string>
+    <string name="action_retry">Încearcă din nou</string>
+
+    <string name="error_otp_invalid">Codul nu este corect sau a expirat.</string>
+    <string name="error_rate_limited">Prea multe încercări. Încearcă din nou peste câteva minute.</string>
+    <string name="error_network">Nu există conexiune la internet. Verifică rețeaua și încearcă din nou.</string>
+    <string name="error_generic">Ceva nu a mers. Încearcă din nou.</string>
+
+    <string name="loading">Se încarcă</string>
+</resources>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Textele fluxului de onboarding (docs/06-flux-onboarding.md §4). Cheile sunt comune pe platforme. -->
+<resources>
+    <string name="welcome_title">Lucrurile bune merită o a doua casă</string>
+    <string name="welcome_point_passport">Fiecare obiect are un pașaport cu istoricul lui</string>
+    <string name="welcome_point_handover">Plătești în siguranță și primești banii la predare</string>
+    <string name="welcome_point_wanted">Spui ce cauți și primești potriviri</string>
+    <string name="welcome_cta">Începe</string>
+
+    <string name="phone_title">Care este numărul tău de telefon?</string>
+    <string name="phone_subtitle">Îți trimitem un cod prin SMS ca să-ți confirmăm numărul.</string>
+    <string name="phone_label">Număr de telefon</string>
+    <string name="phone_error_invalid">Introdu un număr de mobil valid, de exemplu 0712 345 678.</string>
+    <string name="phone_cta">Trimite codul</string>
+    <string name="phone_prefix" translatable="false">+40</string>
+
+    <string name="code_title">Introdu codul primit</string>
+    <string name="code_subtitle">Am trimis un cod din 6 cifre la %1$s.</string>
+    <string name="code_label">Cod de verificare</string>
+    <string name="code_resend">Retrimite codul</string>
+    <string name="code_resend_in">Poți retrimite codul în %1$d s</string>
+
+    <string name="consents_title">Înainte să continui</string>
+    <string name="consent_terms">Sunt de acord cu Termenii și condițiile</string>
+    <string name="consent_privacy">Am citit Politica de confidențialitate</string>
+    <string name="consent_marketing">Vreau să primesc noutăți și oferte</string>
+    <string name="consent_analytics">Ajut la îmbunătățirea aplicației cu date de utilizare anonime</string>
+    <string name="consent_ai">Permit analiza automată a fotografiilor pentru sugestii de titlu și categorie</string>
+    <string name="consents_required_hint">Primele două sunt necesare pentru a folosi aplicația.</string>
+    <string name="consents_optional_header">Opțional</string>
+
+    <string name="name_title">Cum vrei să-ți spunem?</string>
+    <string name="name_subtitle">Numele apare în profilul tău și în conversații.</string>
+    <string name="name_label">Nume afișat</string>
+    <string name="name_error_length">Numele trebuie să aibă între 2 și 40 de caractere.</string>
+
+    <string name="location_title">Unde ești de obicei?</string>
+    <string name="location_subtitle">Îți arătăm ce e aproape de tine. Păstrăm doar zona aproximativă, nu adresa.</string>
+    <string name="location_use_mine">Folosește locația mea</string>
+    <string name="location_pick_city">Aleg orașul</string>
+    <string name="location_denied">Nu avem acces la locație. Poți alege orașul din listă.</string>
+    <string name="location_unavailable">Nu am putut afla unde ești. Poți alege orașul din listă.</string>
+
+    <string name="interests_title">Ce te interesează?</string>
+    <string name="interests_subtitle">Alege câteva categorii. Le poți schimba oricând.</string>
+    <string name="interests_skip">Sari peste</string>
+</resources>

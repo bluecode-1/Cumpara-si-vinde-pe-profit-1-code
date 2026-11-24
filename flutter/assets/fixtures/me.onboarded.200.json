@@ -1,0 +1,26 @@
+{
+  "id": "0193f6a0-2a00-7000-8000-000000000001",
+  "displayName": "Ioana",
+  "avatarUrl": null,
+  "city": "Cluj-Napoca",
+  "verificationTier": "PHONE",
+  "sellerType": "OCCASIONAL",
+  "badges": [
+    { "attribute": "PUNCTUAL", "confirmations": 23 },
+    { "attribute": "AS_DESCRIBED", "confirmations": 31 }
+  ],
+  "completedTransactions": 34,
+  "memberSince": "2026-11-23",
+  "traderInfo": null,
+  "phone": "+40712345678",
+  "email": null,
+  "emailVerified": false,
+  "locale": "ro",
+  "currency": "RON",
+  "homeLocation": { "lat": 46.77, "lng": 23.6 },
+  "limits": {
+    "maxTransaction": { "amountMinor": 150000, "currency": "RON" },
+    "monthlyVolume": { "amountMinor": 500000, "currency": "RON" }
+  },
+  "onboardingCompleted": true
+}

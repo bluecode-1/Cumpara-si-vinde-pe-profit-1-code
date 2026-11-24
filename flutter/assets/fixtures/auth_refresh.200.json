@@ -1,0 +1,5 @@
+{
+  "accessToken": "fixture.access.token.2",
+  "refreshToken": "fixture-refresh-token-2",
+  "expiresInSeconds": 900
+}

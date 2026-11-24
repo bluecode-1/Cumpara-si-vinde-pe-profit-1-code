@@ -1,0 +1,9 @@
+plugins {
+    id 'groovy-gradle-plugin'
+}
+
+dependencies {
+    implementation libs.gradlePlugin.android
+    implementation libs.gradlePlugin.hilt
+    implementation libs.gradlePlugin.navigationSafeArgs
+}

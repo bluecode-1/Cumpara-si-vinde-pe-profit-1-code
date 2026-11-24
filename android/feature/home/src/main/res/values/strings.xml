@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_greeting">Bună, %1$s</string>
+    <string name="home_placeholder">Ecranul principal este în lucru.</string>
+</resources>

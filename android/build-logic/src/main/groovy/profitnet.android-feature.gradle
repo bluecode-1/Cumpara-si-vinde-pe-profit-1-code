@@ -1,0 +1,34 @@
+// Convention for feature modules: MVVM with XML + ViewBinding, Hilt, Navigation + Safe Args (Java).
+plugins {
+    id 'profitnet.android-library'
+    id 'profitnet.hilt'
+    id 'androidx.navigation.safeargs'
+}
+
+def libs = extensions.getByType(VersionCatalogsExtension).named('libs')
+
+android {
+    buildFeatures {
+        viewBinding true
+    }
+}
+
+dependencies {
+    implementation project(':core:common')
+    implementation project(':core:model')
+    implementation project(':core:designsystem')
+
+    implementation libs.findLibrary('androidx-core').get()
+    implementation libs.findLibrary('androidx-appcompat').get()
+    implementation libs.findLibrary('androidx-activity').get()
+    implementation libs.findLibrary('androidx-fragment').get()
+    implementation libs.findLibrary('androidx-constraintlayout').get()
+    implementation libs.findLibrary('androidx-lifecycle-viewmodel').get()
+    implementation libs.findLibrary('androidx-lifecycle-viewmodel-savedstate').get()
+    implementation libs.findLibrary('androidx-lifecycle-livedata').get()
+    implementation libs.findLibrary('androidx-navigation-fragment').get()
+    implementation libs.findLibrary('androidx-navigation-ui').get()
+    implementation libs.findLibrary('material').get()
+
+    testImplementation libs.findLibrary('androidx-arch-core-testing').get()
+}

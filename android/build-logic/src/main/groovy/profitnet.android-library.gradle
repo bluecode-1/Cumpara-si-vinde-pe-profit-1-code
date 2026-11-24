@@ -1,0 +1,11 @@
+// Convention for Android library modules (core:* with Android dependencies).
+plugins {
+    id 'com.android.library'
+    id 'profitnet.android-base'
+}
+
+android {
+    defaultConfig {
+        consumerProguardFiles 'consumer-rules.pro'
+    }
+}

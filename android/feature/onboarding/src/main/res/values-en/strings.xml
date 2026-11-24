@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="welcome_title">Good things deserve a second home</string>
+    <string name="welcome_point_passport">Every item has a passport with its history</string>
+    <string name="welcome_point_handover">Pay safely and get your money at handover</string>
+    <string name="welcome_point_wanted">Say what you are looking for and get matches</string>
+    <string name="welcome_cta">Get started</string>
+
+    <string name="phone_title">What is your phone number?</string>
+    <string name="phone_subtitle">We will text you a code to confirm your number.</string>
+    <string name="phone_label">Phone number</string>
+    <string name="phone_error_invalid">Enter a valid mobile number, for example 0712 345 678.</string>
+    <string name="phone_cta">Send the code</string>
+
+    <string name="code_title">Enter the code you received</string>
+    <string name="code_subtitle">We sent a 6-digit code to %1$s.</string>
+    <string name="code_label">Verification code</string>
+    <string name="code_resend">Resend the code</string>
+    <string name="code_resend_in">You can resend the code in %1$d s</string>
+
+    <string name="consents_title">Before you continue</string>
+    <string name="consent_terms">I agree to the Terms and Conditions</string>
+    <string name="consent_privacy">I have read the Privacy Policy</string>
+    <string name="consent_marketing">I want to receive news and offers</string>
+    <string name="consent_analytics">I help improve the app with anonymous usage data</string>
+    <string name="consent_ai">I allow automatic analysis of photos for title and category suggestions</string>
+    <string name="consents_required_hint">The first two are required to use the app.</string>
+    <string name="consents_optional_header">Optional</string>
+
+    <string name="name_title">What should we call you?</string>
+    <string name="name_subtitle">Your name appears on your profile and in conversations.</string>
+    <string name="name_label">Display name</string>
+    <string name="name_error_length">The name must be between 2 and 40 characters.</string>
+
+    <string name="location_title">Where are you usually?</string>
+    <string name="location_subtitle">We show you what is nearby. We keep only the approximate area, not your address.</string>
+    <string name="location_use_mine">Use my location</string>
+    <string name="location_pick_city">I will pick the city</string>
+    <string name="location_denied">We do not have access to your location. You can pick your city from the list.</string>
+    <string name="location_unavailable">We could not find where you are. You can pick your city from the list.</string>
+
+    <string name="interests_title">What are you interested in?</string>
+    <string name="interests_subtitle">Pick a few categories. You can change them anytime.</string>
+    <string name="interests_skip">Skip</string>
+</resources>

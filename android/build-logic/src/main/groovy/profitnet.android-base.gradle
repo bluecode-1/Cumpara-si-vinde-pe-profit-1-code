@@ -1,0 +1,39 @@
+// Shared Android settings for both the application and library modules.
+// Applied by the other convention plugins after the Android plugin itself.
+def libs = extensions.getByType(VersionCatalogsExtension).named('libs')
+
+android {
+    compileSdk libs.findVersion('compileSdk').get().requiredVersion.toInteger()
+    buildToolsVersion libs.findVersion('buildTools').get().requiredVersion
+
+    defaultConfig {
+        minSdk libs.findVersion('minSdk').get().requiredVersion.toInteger()
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError true
+        checkReleaseBuilds true
+        // Only android-35 is the agreed compile/target SDK for now; newer library and
+        // tool versions are tracked centrally in gradle/libs.versions.toml.
+        disable 'GradleDependency', 'NewerVersionAvailable', 'AndroidGradlePluginVersion', 'OldTargetApi'
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+dependencies {
+    testImplementation libs.findLibrary('junit').get()
+    testImplementation libs.findLibrary('mockito-core').get()
+}

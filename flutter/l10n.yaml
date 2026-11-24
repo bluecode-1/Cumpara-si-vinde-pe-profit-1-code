@@ -1,0 +1,10 @@
+arb-dir: l10n
+template-arb-file: app_ro.arb
+output-dir: lib/l10n
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+nullable-getter: false
+# gen-l10n still emits a convenience delegate list that references the legacy
+# flutter_localizations classes. The app does not use that list (see
+# lib/app/app.dart), so the deprecation is silenced in the generated files only.
+header: "// ignore_for_file: deprecated_member_use"

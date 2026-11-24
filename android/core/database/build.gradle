@@ -1,0 +1,22 @@
+plugins {
+    id 'profitnet.android-library'
+    id 'profitnet.hilt'
+}
+
+android {
+    namespace 'ro.profitnet.app.core.database'
+
+    defaultConfig {
+        javaCompileOptions {
+            annotationProcessorOptions {
+                // Exported schemas are committed so that migrations can be tested later.
+                arguments += ['room.schemaLocation': "$projectDir/schemas".toString()]
+            }
+        }
+    }
+}
+
+dependencies {
+    api libs.androidx.room.runtime
+    annotationProcessor libs.androidx.room.compiler
+}

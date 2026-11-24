@@ -1,0 +1,13 @@
+plugins {
+    id 'profitnet.android-feature'
+}
+
+android {
+    namespace 'ro.profitnet.app.feature.onboarding'
+}
+
+dependencies {
+    implementation project(':core:network')
+    implementation project(':core:security')
+    implementation project(':core:database')
+}

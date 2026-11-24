@@ -1,0 +1,11 @@
+// Hilt with the Java annotation processor (no kapt / ksp).
+plugins {
+    id 'com.google.dagger.hilt.android'
+}
+
+def libs = extensions.getByType(VersionCatalogsExtension).named('libs')
+
+dependencies {
+    implementation libs.findLibrary('hilt-android').get()
+    annotationProcessor libs.findLibrary('hilt-compiler').get()
+}

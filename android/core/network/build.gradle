@@ -1,0 +1,64 @@
+import ro.profitnet.buildlogic.SyncApiFixturesTask
+
+plugins {
+    id 'profitnet.android-library'
+    id 'profitnet.hilt'
+}
+
+// Overridable with -Pprofitnet.apiBaseUrl=... / -Pprofitnet.certificatePins=sha256/AAA=,sha256/BBB=
+// The production host does not exist yet, so no pins are configured and pinning stays disabled.
+def apiBaseUrl = providers.gradleProperty('profitnet.apiBaseUrl')
+        .getOrElse('https://api.profitnet.example/v1/')
+def certificatePins = providers.gradleProperty('profitnet.certificatePins').getOrElse('')
+
+android {
+    namespace 'ro.profitnet.app.core.network'
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    defaultConfig {
+        buildConfigField 'String', 'API_BASE_URL', "\"${apiBaseUrl}\""
+        buildConfigField 'String', 'CERTIFICATE_PINS', "\"${certificatePins}\""
+    }
+}
+
+// The fixtures in <repo>/api/fixtures are the single source of truth. They are copied (never
+// duplicated by hand) into generated debug assets for the fake API and into a generated
+// directory read by the unit tests.
+def apiFixtures = rootProject.layout.projectDirectory.dir('../api/fixtures')
+
+def syncDebugApiFixtures = tasks.register('syncDebugApiFixtures', SyncApiFixturesTask) {
+    fixturesDir = apiFixtures
+}
+
+def syncTestApiFixtures = tasks.register('syncTestApiFixtures', SyncApiFixturesTask) {
+    fixturesDir = apiFixtures
+    outputDir = layout.buildDirectory.dir('generated/apiFixtures/test')
+}
+
+androidComponents {
+    onVariants(selector().withBuildType('debug')) { variant ->
+        variant.sources.assets.addGeneratedSourceDirectory(syncDebugApiFixtures) { it.outputDir }
+    }
+}
+
+tasks.withType(Test).configureEach {
+    dependsOn syncTestApiFixtures
+    systemProperty 'profitnet.fixturesDir',
+            layout.buildDirectory.dir('generated/apiFixtures/test/fixtures').get().asFile.absolutePath
+}
+
+dependencies {
+    api project(':core:common')
+    api project(':core:model')
+    implementation project(':core:security')
+
+    api libs.retrofit
+    api libs.okhttp
+    implementation libs.retrofit.gson
+    implementation libs.gson
+
+    testImplementation libs.okhttp.mockwebserver
+}

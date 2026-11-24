@@ -1,0 +1,2 @@
+// Root build file. Plugin versions come from build-logic (see gradle/libs.versions.toml);
+// module configuration lives in the convention plugins under build-logic/.

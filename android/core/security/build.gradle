@@ -1,0 +1,15 @@
+plugins {
+    id 'profitnet.android-library'
+    id 'profitnet.hilt'
+}
+
+android {
+    namespace 'ro.profitnet.app.core.security'
+}
+
+dependencies {
+    androidTestImplementation libs.junit
+    androidTestImplementation libs.androidx.test.core
+    androidTestImplementation libs.androidx.test.ext.junit
+    androidTestImplementation libs.androidx.test.runner
+}

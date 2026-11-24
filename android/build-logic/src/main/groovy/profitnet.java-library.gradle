@@ -1,0 +1,20 @@
+// Convention for pure-Java modules (no Android dependencies), unit-testable on the JVM.
+plugins {
+    id 'java-library'
+}
+
+def libs = extensions.getByType(VersionCatalogsExtension).named('libs')
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 17
+}
+
+dependencies {
+    testImplementation libs.findLibrary('junit').get()
+}
