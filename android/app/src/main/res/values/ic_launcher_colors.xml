@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launcher icon colours are fixed (they do not follow light/dark): Livada primary. -->
+    <color name="ic_launcher_background">#4F5D23</color>
+    <color name="ic_launcher_foreground">#F4F1E8</color>
+</resources>

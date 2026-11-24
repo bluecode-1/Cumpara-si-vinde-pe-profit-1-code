@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    HTTPS only, system trust anchors only (user-installed CAs are not trusted, in any build).
+
+    Certificate pinning is enforced in code by OkHttp's CertificatePinner (core:network), with
+    pins supplied through the "profitnet.certificatePins" Gradle property. The production domain
+    does not exist yet, so no pins are configured. When it does, also add a matching
+    <domain-config><pin-set> here (with a backup pin and an expiration date) so that WebViews
+    and platform HTTP clients are covered as well.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

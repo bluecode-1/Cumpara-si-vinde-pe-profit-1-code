@@ -1,0 +1,74 @@
+plugins {
+    id 'profitnet.android-application'
+    id 'profitnet.hilt'
+}
+
+android {
+    namespace 'ro.profitnet.app'
+
+    defaultConfig {
+        applicationId 'ro.profitnet.app'
+        targetSdk libs.versions.targetSdk.get().toInteger()
+        versionCode 1
+        versionName '0.1.0'
+        // Hilt needs its own test application; see HiltTestRunner.
+        testInstrumentationRunner 'ro.profitnet.app.HiltTestRunner'
+    }
+
+    buildFeatures {
+        viewBinding true
+    }
+
+    buildTypes {
+        debug {
+            // Demo mode: the fake API from core:network (src/debug) answers every request.
+        }
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // No signing config is committed: the release APK is unsigned until the release
+            // keystore is provided by the delivery pipeline.
+        }
+    }
+
+    androidResources {
+        // Only the two supported languages are packaged.
+        localeFilters = ['ro', 'en']
+    }
+}
+
+dependencies {
+    implementation project(':core:common')
+    implementation project(':core:model')
+    implementation project(':core:network')
+    implementation project(':core:security')
+    implementation project(':core:database')
+    implementation project(':core:designsystem')
+    implementation project(':feature:onboarding')
+    implementation project(':feature:home')
+
+    implementation libs.androidx.core
+    implementation libs.androidx.appcompat
+    implementation libs.androidx.activity
+    implementation libs.androidx.fragment
+    implementation libs.androidx.lifecycle.viewmodel
+    implementation libs.androidx.lifecycle.livedata
+    implementation libs.androidx.navigation.fragment
+    implementation libs.androidx.navigation.ui
+    implementation libs.material
+    // Compile-time only: javac needs KSerializer to resolve NavGraph.setStartDestination overloads.
+    // No Kotlin source or plugin is involved; navigation-common already ships it at runtime.
+    compileOnly libs.kotlinx.serialization.core
+
+    testImplementation libs.androidx.arch.core.testing
+
+    androidTestImplementation libs.junit
+    androidTestImplementation libs.androidx.test.core
+    androidTestImplementation libs.androidx.test.ext.junit
+    androidTestImplementation libs.androidx.test.runner
+    androidTestImplementation libs.androidx.test.espresso.core
+    androidTestImplementation libs.androidx.test.espresso.idling.concurrent
+    androidTestImplementation libs.hilt.testing
+    androidTestAnnotationProcessor libs.hilt.compiler
+}

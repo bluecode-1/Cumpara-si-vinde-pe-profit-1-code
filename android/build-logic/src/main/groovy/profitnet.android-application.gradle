@@ -1,0 +1,5 @@
+// Convention for the application module.
+plugins {
+    id 'com.android.application'
+    id 'profitnet.android-base'
+}
