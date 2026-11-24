@@ -1,0 +1,91 @@
+# Suggested GitHub Actions workflow for the iOS app.
+# Move this file to .github/workflows/ios.yml to enable it.
+name: iOS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ios/**"
+      - "api/**"
+      - "design/**"
+      - ".github/workflows/ios.yml"
+  pull_request:
+    paths:
+      - "ios/**"
+      - "api/**"
+      - "design/**"
+      - ".github/workflows/ios.yml"
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: macos-15
+    timeout-minutes: 45
+    env:
+      # Any iOS 17+ simulator works; adjust to what the runner image provides
+      # (`xcrun simctl list devices available`).
+      DESTINATION: "platform=iOS Simulator,name=iPhone 16,OS=latest"
+    defaults:
+      run:
+        working-directory: ios
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Shared fixtures, fonts and tokens are in sync
+        run: Scripts/sync-fixtures.sh --check
+
+      # The package supports iOS only, so `swift test` (which builds for
+      # macOS) cannot be used; the tests run on a simulator via xcodebuild.
+      - name: Package tests (ProfitNetKit)
+        working-directory: ios/Packages/ProfitNetKit
+        run: |
+          set -o pipefail
+          # Xcode names the scheme "<Package>-Package" when a package has
+          # several products and "<Product>" when it has one.
+          SCHEMES="$(xcodebuild -list -json | python3 -c 'import json,sys; print("\n".join(json.load(sys.stdin)["workspace"]["schemes"]))')"
+          if echo "$SCHEMES" | grep -qx "ProfitNetKit-Package"; then
+            SCHEME="ProfitNetKit-Package"
+          else
+            SCHEME="ProfitNetKit"
+          fi
+          echo "Using scheme: $SCHEME"
+          xcodebuild test \
+            -scheme "$SCHEME" \
+            -destination "$DESTINATION" \
+            -skipPackagePluginValidation \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate the Xcode project
+        run: xcodegen generate
+
+      - name: App build and UI tests (ProfitNet scheme)
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project ProfitNet.xcodeproj \
+            -scheme ProfitNet \
+            -destination "$DESTINATION" \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Release build compiles (demo API excluded)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project ProfitNet.xcodeproj \
+            -scheme ProfitNet \
+            -configuration Release \
+            -destination "generic/platform=iOS Simulator" \
+            CODE_SIGNING_ALLOWED=NO

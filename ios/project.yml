@@ -1,0 +1,89 @@
+# XcodeGen project description. Generate the Xcode project with:
+#   brew install xcodegen && xcodegen generate
+# The generated ProfitNet.xcodeproj is not committed.
+name: ProfitNet
+
+options:
+  bundleIdPrefix: ro.profitnet
+  deploymentTarget:
+    iOS: "17.0"
+  developmentLanguage: ro
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+packages:
+  ProfitNetKit:
+    path: Packages/ProfitNetKit
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    TARGETED_DEVICE_FAMILY: "1"
+
+targets:
+  ProfitNet:
+    type: application
+    platform: iOS
+    sources:
+      - path: ProfitNet
+    dependencies:
+      - package: ProfitNetKit
+        product: ProfitNetKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ro.profitnet.app
+        PRODUCT_NAME: ProfitNet
+        INFOPLIST_FILE: ProfitNet/Info.plist
+        GENERATE_INFOPLIST_FILE: "NO"
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+      configs:
+        Debug:
+          API_BASE_URL: "https://api.staging.profitnet.example/v1"
+        Release:
+          API_BASE_URL: "https://api.profitnet.example/v1"
+    postBuildScripts:
+      # The fake API code is compiled only in debug builds (#if DEBUG), but
+      # SwiftPM cannot make a resource bundle conditional. Remove the demo
+      # fixtures from release builds so nothing of the demo mode ships.
+      - name: Remove demo fixtures from release builds
+        basedOnDependencyAnalysis: false
+        script: |
+          if [ "${CONFIGURATION}" = "Release" ]; then
+            rm -rf "${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/ProfitNetKit_FakeAPI.bundle"
+          fi
+
+  ProfitNetUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: ProfitNetUITests
+    dependencies:
+      - target: ProfitNet
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ro.profitnet.app.uitests
+        GENERATE_INFOPLIST_FILE: "YES"
+        TEST_TARGET_NAME: ProfitNet
+
+schemes:
+  ProfitNet:
+    build:
+      targets:
+        ProfitNet: all
+        ProfitNetUITests: [test]
+    run:
+      config: Debug
+      # No backend exists yet: running from Xcode uses the demo API.
+      commandLineArguments:
+        "-FAKE_API 1": true
+    test:
+      config: Debug
+      targets:
+        - ProfitNetUITests
+    profile:
+      config: Release
+    archive:
+      config: Release

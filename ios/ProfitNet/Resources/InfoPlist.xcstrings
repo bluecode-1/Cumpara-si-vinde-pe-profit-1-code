@@ -1,0 +1,23 @@
+{
+  "sourceLanguage": "ro",
+  "strings": {
+    "NSLocationWhenInUseUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "ro": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Folosim locația ca să îți arătăm anunțurile din apropiere. Păstrăm doar zona aproximativă, nu adresa."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We use your location to show you listings nearby. We only keep the approximate area, not your address."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

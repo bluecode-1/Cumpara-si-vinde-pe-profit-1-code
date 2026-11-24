@@ -1,0 +1,7 @@
+{
+  "type": "https://api.profitnet.example/problems/rate-limited",
+  "title": "Prea multe încercări",
+  "status": 429,
+  "detail": "Încearcă din nou peste câteva minute.",
+  "code": "RATE_LIMITED"
+}

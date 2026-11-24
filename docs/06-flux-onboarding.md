@@ -35,7 +35,7 @@
 - **Cod.** Exact 6 cifre. Eroarea `OTP_INVALID` golește câmpul și afișează mesajul; `RATE_LIMITED` afișează mesajul și blochează retrimiterea până la expirarea numărătorii.
 - **Versiunea politicii** trimisă la consimțăminte: `2026-11`.
 - **Orașe pentru alegerea manuală** (nume, lat, lng): București 44.43, 26.10 · Cluj-Napoca 46.77, 23.60 · Timișoara 45.76, 21.23 · Iași 47.16, 27.59 · Constanța 44.18, 28.63 · Brașov 45.65, 25.60 · Craiova 44.32, 23.80 · Galați 45.44, 28.05 · Oradea 47.05, 21.93 · Sibiu 45.80, 24.15.
-- **Sesiune.** Tokenul de acces se atașează la fiecare cerere autentificată. La 401, clientul face o singură reîmprospătare (`POST /auth/refresh`), serializată între cererile concurente, apoi repetă cererea o dată. Dacă reîmprospătarea eșuează, sesiunea se șterge și utilizatorul ajunge la `Welcome`.
+- **Sesiune.** Tokenul de acces se atașează la fiecare cerere autentificată. La 401, clientul face o singură reîmprospătare (`POST /auth/refresh`), serializată între cererile concurente, apoi repetă cererea o dată. Dacă serverul respinge reîmprospătarea, sesiunea se șterge și utilizatorul ajunge la `Welcome`. Dacă reîmprospătarea eșuează din cauza rețelei, sesiunea se păstrează și se afișează eroarea de conexiune.
 - **Erori.** Corpul `application/problem+json` se transformă în `AppError(code, status)`. Textul afișat vine din resursele aplicației, pe baza lui `code`; `detail` de la server nu se afișează. Fără rețea → mesajul de conexiune.
 - **Accesibilitate.** Ținte de atingere de minimum 48 dp / 44 pt; etichete pentru cititoarele de ecran pe toate controalele; erorile se anunță (live region / `accessibilityAnnouncement`); niciun text cu dimensiune fixă care să nu scaleze; mod deschis și întunecat din `design/tokens.json`.
 

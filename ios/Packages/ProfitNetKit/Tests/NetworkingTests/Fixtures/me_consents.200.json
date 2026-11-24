@@ -1,0 +1,38 @@
+[
+  {
+    "purpose": "TERMS",
+    "granted": true,
+    "policyVersion": "2026-11",
+    "updatedAt": "2026-11-23T10:00:00Z"
+  },
+  {
+    "purpose": "PRIVACY",
+    "granted": true,
+    "policyVersion": "2026-11",
+    "updatedAt": "2026-11-23T10:00:00Z"
+  },
+  {
+    "purpose": "MARKETING",
+    "granted": false,
+    "policyVersion": "2026-11",
+    "updatedAt": "2026-11-23T10:00:00Z"
+  },
+  {
+    "purpose": "ANALYTICS",
+    "granted": false,
+    "policyVersion": "2026-11",
+    "updatedAt": "2026-11-23T10:00:00Z"
+  },
+  {
+    "purpose": "LOCATION",
+    "granted": true,
+    "policyVersion": "2026-11",
+    "updatedAt": "2026-11-23T10:00:00Z"
+  },
+  {
+    "purpose": "AI_PHOTO_PROCESSING",
+    "granted": false,
+    "policyVersion": "2026-11",
+    "updatedAt": "2026-11-23T10:00:00Z"
+  }
+]

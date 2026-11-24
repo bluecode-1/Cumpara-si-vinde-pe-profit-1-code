@@ -202,7 +202,7 @@ ios/
 │   │   ├── Networking/                  # APIClient (URLSession, async/await), Endpoint, AuthInterceptor (actor),
 │   │   │                                # PinningDelegate, ProblemDecoder
 │   │   ├── Persistence/                 # modele SwiftData (@Model), ModelContainer, migrări (VersionedSchema)
-│   │   ├── Security/                    # KeychainTokenStore
+│   │   ├── SecureStorage/               # KeychainTokenStore (numele „Security” ar ascunde framework-ul Apple)
 │   │   ├── Media/                       # ImageCompressor (HEIC), MetadataStripper, BlockUploader
 │   │   │                                # pe URLSession de fundal
 │   │   ├── Realtime/                    # ChatHubClient: protocolul SignalR JSON peste URLSessionWebSocketTask
