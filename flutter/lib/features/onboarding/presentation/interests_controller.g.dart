@@ -48,7 +48,7 @@ final class InterestsControllerProvider
 }
 
 String _$interestsControllerHash() =>
-    r'9c74d7f896e5751939901bc41c8e5bcb6e924ebe';
+    r'38f9d3b06662b6065b831b0a149715be033359d7';
 
 /// Step 7: optional multi-selection of top-level categories; finishing (or
 /// skipping) completes onboarding.

@@ -48,4 +48,4 @@ final class ApiConfigProvider
   }
 }
 
-String _$apiConfigHash() => r'1903e9aae195c7cd542af2bde9c8c81ec48bf1e8';
+String _$apiConfigHash() => r'd6209511fd6c681a128b18fbbb928cba9ad64f6a';

@@ -76,3 +76,16 @@ Future<void> tapText(WidgetTester tester, String text) async {
   await tester.tap(await scrollToText(tester, text));
   await tester.pump();
 }
+
+/// Unmounts the screen under test and disposes [container], so that
+/// auto-dispose controllers release their timers (e.g. the resend countdown)
+/// before the test ends. Needed because pending disposals are driven by the
+/// provider scope, which is gone once the tree is unmounted.
+Future<void> unmountScreen(
+  WidgetTester tester,
+  ProviderContainer container,
+) async {
+  await tester.pumpWidget(const SizedBox.shrink());
+  container.dispose();
+  await tester.pump();
+}
